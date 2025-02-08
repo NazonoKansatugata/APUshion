@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "184044888801",
+    "project_id": "apushion",
+    "storage_bucket": "apushion.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:184044888801:android:b5bed61d5450690eddcda0",
+        "android_client_info": {
+          "package_name": "com.example.my_flutter_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAH65jGrsnQl47JyywOJf_t4G_zevOJ36s"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
