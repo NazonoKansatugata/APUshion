@@ -3,13 +3,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // Firebase Auth をインポート
 
 // 画面遷移のためのWidget
-
 import 'package:apusion/ui/home/HomeScreen.dart';
 import 'package:apusion/ui/create/view/create_page.dart';
 import 'package:apusion/ui/favorite/favorite_page.dart';
 import 'package:apusion/ui/home/ProfileCard.dart'; // プロフィールカードのインポート
 import 'package:apusion/ui/home/ProfileDetailScreen.dart'; // プロフィール詳細画面
 import 'package:apusion/ui/auth/view/auth_page.dart';
+import 'package:apusion/ui/user/user_page.dart';
+
 
 class MainScreen extends StatefulWidget {
   @override
@@ -18,31 +19,14 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  Map<String, dynamic>? _selectedProfile;
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchFavoriteProfile();  // お気に入りのキャラを取得
-  }
-
-  void _fetchFavoriteProfile() async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) return;
-
-    final snapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(currentUser.uid)
-        .collection('likedProfiles')
-        .limit(1) // 最初のお気に入りを取得
-        .get();
-
-    if (snapshot.docs.isNotEmpty) {
-      setState(() {
-        _selectedProfile = snapshot.docs.first.data();
-      });
-    }
-  }
+  final List<Widget> _screens = [
+    HomeScreen(),
+    CreateScreen(),
+    HomeScreen(),
+    FavoriteScreen(),
+    UserScreen(),
+  ];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -52,22 +36,15 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> _screens = [
-      HomeScreen(),
-      CreateScreen(),
-      HomeScreen(), // トークページを削除し、ホーム画面に遷移
-      FavoriteScreen(),
-      AuthPage(),
-    ];
-
     return Scaffold(
       appBar: AppBar(
         title: Text("ぷろふぃーるはぶ",
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
+            style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold)),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [],
-        titleTextStyle: TextStyle(color: Colors.black),
+        actions: [
+          
+        ]
       ),
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
@@ -75,13 +52,13 @@ class _MainScreenState extends State<MainScreen> {
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'ホーム'),
           BottomNavigationBarItem(icon: Icon(Icons.create), label: 'クリエイト'),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'ホーム'), // トークタブを削除してホームへ
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'ホーム'),
           BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'お気に入り'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'ユーザー'),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
+        unselectedItemColor: Colors.black,
         onTap: _onItemTapped,
       ),
     );
@@ -99,7 +76,6 @@ class ProfileSearchDelegate extends SearchDelegate {
       },
     );
   }
-
   final String? userId = FirebaseAuth.instance.currentUser?.uid; // ログインユーザーの ID を取得
 
   @override
@@ -114,6 +90,7 @@ class ProfileSearchDelegate extends SearchDelegate {
     ];
   }
 
+  
   @override
   Widget buildResults(BuildContext context) {
     if (userId == null) {
@@ -150,6 +127,7 @@ class ProfileSearchDelegate extends SearchDelegate {
 
   @override
   Widget buildSuggestions(BuildContext context) {
+    
     if (userId == null) {
       return Center(child: Text("ログインしてください"));
     }
