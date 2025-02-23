@@ -8,21 +8,12 @@ import 'package:apusion/ui/auth/view/auth_page.dart';
 class CreateScreenViewModel extends ChangeNotifier {
   // 入力されるテキストを管理するコントローラー
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController tagController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
+  final TextEditingController priceController = TextEditingController();
+  final TextEditingController categoryController = TextEditingController();
   final TextEditingController imageUrlController = TextEditingController();
-  final TextEditingController genderController = TextEditingController();
-  final TextEditingController personalityController = TextEditingController();
-  final TextEditingController heightController = TextEditingController();
-  final TextEditingController bloodTypeController = TextEditingController();
-  final TextEditingController ageController = TextEditingController();
-  final TextEditingController hobbiesController = TextEditingController();
-  final TextEditingController familyStructureController = TextEditingController();
-  final TextEditingController birthDateController = TextEditingController();
-  final TextEditingController otherDetailsController = TextEditingController();
-  final TextEditingController likesDislikesController = TextEditingController();
-  final TextEditingController concernsController = TextEditingController();
-  final TextEditingController remarksController = TextEditingController();
+
+  /// 商品を Firestore に保存する（新規作成）
   Future<void> submitProfile(BuildContext context) async {
     final profileId = FirebaseFirestore.instance.collection('profiles').doc().id;
     final user = FirebaseAuth.instance.currentUser;
@@ -33,44 +24,32 @@ class CreateScreenViewModel extends ChangeNotifier {
       return;
     }
 
-    final profile = ProfileModel(
-      id: profileId,
-      userId: user.uid,
-      userName: user.displayName ?? 'No Name',
-      name: nameController.text,
-      tag: tagController.text.split(' ').map((tag) => tag.trim()).toList(),
-      description: descriptionController.text,
-      imageUrl: imageUrlController.text,
-      gender: genderController.text,
-      personality: personalityController.text,
-      height: heightController.text,
-      bloodType: bloodTypeController.text,
-      age: ageController.text,
-      hobbies: hobbiesController.text.split(' ').map((hobby) => hobby.trim()).toList(),
-      familyStructure: familyStructureController.text,
-      birthDate: birthDateController.text,
-      otherDetails: otherDetailsController.text,
-      likesDislikes: likesDislikesController.text,
-      concerns: concernsController.text,
-      remarks: remarksController.text,
-      createdBy: user.uid,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
+    // 商品情報を保存するモデルを作成
+    final profile = {
+      'id': profileId,
+      'userId': user.uid,
+      'name': nameController.text,
+      'description': descriptionController.text,
+      'price': double.tryParse(priceController.text) ?? 0.0, // 数値として扱う
+      'category': categoryController.text,
+      'imageUrl': imageUrlController.text,
+      'createdBy': user.uid,
+      'createdAt': DateTime.now(),
+      'updatedAt': DateTime.now(),
+    };
 
     try {
-      // Firestore に保存
-      await FirebaseFirestore.instance.collection('profiles').doc(profileId).set(profile.toJson());
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).collection('createdProfiles').doc(profileId).set(profile.toJson());
+      // Firestore に商品情報を保存
+      await FirebaseFirestore.instance.collection('profiles').doc(profileId).set(profile);
 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('プロフィールが保存されました')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('商品が保存されました')));
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => MainScreen()));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('保存に失敗しました: $e')));
     }
   }
 
-  /// プロフィールを Firestore に更新する（編集）
+  /// 商品情報を Firestore に更新する（編集）
   Future<void> updateProfile(BuildContext context, String profileId) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -80,27 +59,16 @@ class CreateScreenViewModel extends ChangeNotifier {
 
     final profileUpdate = {
       'name': nameController.text,
-      'tag': tagController.text.split(' ').map((tag) => tag.trim()).toList(),
       'description': descriptionController.text,
+      'price': double.tryParse(priceController.text) ?? 0.0,
+      'category': categoryController.text,
       'imageUrl': imageUrlController.text,
-      'gender': genderController.text,
-      'personality': personalityController.text,
-      'height': heightController.text,
-      'bloodType': bloodTypeController.text,
-      'age': ageController.text,
-      'hobbies': hobbiesController.text.split(' ').map((hobby) => hobby.trim()).toList(),
-      'familyStructure': familyStructureController.text,
-      'birthDate': birthDateController.text,
-      'otherDetails': otherDetailsController.text,
-      'likesDislikes': likesDislikesController.text,
-      'concerns': concernsController.text,
-      'remarks': remarksController.text,
       'updatedAt': DateTime.now(),
     };
 
     try {
       await FirebaseFirestore.instance.collection('profiles').doc(profileId).update(profileUpdate);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('プロフィールが更新されました')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('商品が更新されました')));
       Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('更新に失敗しました: $e')));
@@ -111,21 +79,10 @@ class CreateScreenViewModel extends ChangeNotifier {
   @override
   void dispose() {
     nameController.dispose();
-    tagController.dispose();
     descriptionController.dispose();
+    priceController.dispose();
+    categoryController.dispose();
     imageUrlController.dispose();
-    genderController.dispose();
-    personalityController.dispose();
-    heightController.dispose();
-    bloodTypeController.dispose();
-    ageController.dispose();
-    hobbiesController.dispose();
-    familyStructureController.dispose();
-    birthDateController.dispose();
-    otherDetailsController.dispose();
-    likesDislikesController.dispose();
-    concernsController.dispose();
-    remarksController.dispose();
     super.dispose();
   }
 }
