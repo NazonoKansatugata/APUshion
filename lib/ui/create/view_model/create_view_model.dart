@@ -2,75 +2,63 @@ import 'package:flutter/material.dart';
 import 'package:apusion/model/profile_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:apusion/ui/home/home_page.dart';
-import 'package:apusion/ui/auth/view/auth_page.dart';
 
 class CreateScreenViewModel extends ChangeNotifier {
-  // 入力されるテキストを管理するコントローラー
   final TextEditingController nameController = TextEditingController();
-  final TextEditingController tagController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-  final TextEditingController imageUrlController = TextEditingController();
-  final TextEditingController genderController = TextEditingController();
-  final TextEditingController personalityController = TextEditingController();
-  final TextEditingController heightController = TextEditingController();
-  final TextEditingController bloodTypeController = TextEditingController();
-  final TextEditingController ageController = TextEditingController();
-  final TextEditingController hobbiesController = TextEditingController();
-  final TextEditingController familyStructureController = TextEditingController();
-  final TextEditingController birthDateController = TextEditingController();
-  final TextEditingController otherDetailsController = TextEditingController();
-  final TextEditingController likesDislikesController = TextEditingController();
-  final TextEditingController concernsController = TextEditingController();
-  final TextEditingController remarksController = TextEditingController();
+  final TextEditingController priceController = TextEditingController();
+  String selectedCategory = '電子レンジ';
+  List<String> imageUrls = [];
+
+  void addImageUrl(String url) {
+    if (imageUrls.length < 5) {
+      imageUrls.add(url);
+      notifyListeners();
+    }
+  }
+
+  Future<void> removeImageUrl(String url) async {
+    try {
+      await FirebaseStorage.instance.refFromURL(url).delete();
+      imageUrls.remove(url);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('画像の削除に失敗しました: $e');
+    }
+  }
+
   Future<void> submitProfile(BuildContext context) async {
     final profileId = FirebaseFirestore.instance.collection('profiles').doc().id;
     final user = FirebaseAuth.instance.currentUser;
 
     if (user == null) {
       debugPrint('User is not logged in');
-      Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => AuthPage()));
       return;
     }
 
-    final profile = ProfileModel(
-      id: profileId,
-      userId: user.uid,
-      userName: user.displayName ?? 'No Name',
-      name: nameController.text,
-      tag: tagController.text.split(' ').map((tag) => tag.trim()).toList(),
-      description: descriptionController.text,
-      imageUrl: imageUrlController.text,
-      gender: genderController.text,
-      personality: personalityController.text,
-      height: heightController.text,
-      bloodType: bloodTypeController.text,
-      age: ageController.text,
-      hobbies: hobbiesController.text.split(' ').map((hobby) => hobby.trim()).toList(),
-      familyStructure: familyStructureController.text,
-      birthDate: birthDateController.text,
-      otherDetails: otherDetailsController.text,
-      likesDislikes: likesDislikesController.text,
-      concerns: concernsController.text,
-      remarks: remarksController.text,
-      createdBy: user.uid,
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.now(),
-    );
+    final profile = {
+      'id': profileId,
+      'userId': user.uid,
+      'name': nameController.text,
+      'description': descriptionController.text,
+      'price': double.tryParse(priceController.text) ?? 0.0,
+      'category': selectedCategory,
+      'imageUrls': imageUrls,
+      'createdAt': DateTime.now(),
+      'updatedAt': DateTime.now(),
+    };
 
     try {
-      // Firestore に保存
-      await FirebaseFirestore.instance.collection('profiles').doc(profileId).set(profile.toJson());
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).collection('createdProfiles').doc(profileId).set(profile.toJson());
-
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('プロフィールが保存されました')));
+      await FirebaseFirestore.instance.collection('profiles').doc(profileId).set(profile);
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('商品が保存されました')));
       Navigator.of(context).pushReplacement(MaterialPageRoute(builder: (context) => MainScreen()));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('保存に失敗しました: $e')));
     }
   }
 
-  /// プロフィールを Firestore に更新する（編集）
   Future<void> updateProfile(BuildContext context, String profileId) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
@@ -80,52 +68,27 @@ class CreateScreenViewModel extends ChangeNotifier {
 
     final profileUpdate = {
       'name': nameController.text,
-      'tag': tagController.text.split(' ').map((tag) => tag.trim()).toList(),
       'description': descriptionController.text,
-      'imageUrl': imageUrlController.text,
-      'gender': genderController.text,
-      'personality': personalityController.text,
-      'height': heightController.text,
-      'bloodType': bloodTypeController.text,
-      'age': ageController.text,
-      'hobbies': hobbiesController.text.split(' ').map((hobby) => hobby.trim()).toList(),
-      'familyStructure': familyStructureController.text,
-      'birthDate': birthDateController.text,
-      'otherDetails': otherDetailsController.text,
-      'likesDislikes': likesDislikesController.text,
-      'concerns': concernsController.text,
-      'remarks': remarksController.text,
+      'price': double.tryParse(priceController.text) ?? 0.0,
+      'category': selectedCategory,
+      'imageUrls': imageUrls,
       'updatedAt': DateTime.now(),
     };
 
     try {
       await FirebaseFirestore.instance.collection('profiles').doc(profileId).update(profileUpdate);
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('プロフィールが更新されました')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('商品が更新されました')));
       Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('更新に失敗しました: $e')));
     }
   }
 
-  /// ViewModel を破棄するときにコントローラを解放
   @override
   void dispose() {
     nameController.dispose();
-    tagController.dispose();
     descriptionController.dispose();
-    imageUrlController.dispose();
-    genderController.dispose();
-    personalityController.dispose();
-    heightController.dispose();
-    bloodTypeController.dispose();
-    ageController.dispose();
-    hobbiesController.dispose();
-    familyStructureController.dispose();
-    birthDateController.dispose();
-    otherDetailsController.dispose();
-    likesDislikesController.dispose();
-    concernsController.dispose();
-    remarksController.dispose();
+    priceController.dispose();
     super.dispose();
   }
 }

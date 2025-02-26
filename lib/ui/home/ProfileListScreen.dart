@@ -46,7 +46,10 @@ class ProfileListScreen extends StatelessWidget {
             SizedBox(height: kToolbarHeight + 30), // 余白を増やす
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance.collection('profiles').snapshots(),
+                stream: FirebaseFirestore.instance
+                    .collection('profiles')
+                    .where('status', isEqualTo: '出品中')
+                    .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Center(child: CircularProgressIndicator());

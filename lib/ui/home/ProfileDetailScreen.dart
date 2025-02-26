@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProfileDetailScreen extends StatefulWidget {
   final String documentId;
@@ -11,13 +12,38 @@ class ProfileDetailScreen extends StatefulWidget {
 }
 
 class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
+  Future<void> _purchaseItem() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("ログインしてください")),
+      );
+      return;
+    }
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('purchases')
+          .doc(widget.documentId)
+          .set({'buyerId': user.uid, 'purchaseDate': DateTime.now()});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("購入が完了しました")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("購入に失敗しました: $e")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.purple.shade50,
       appBar: AppBar(
         title: Text(
-          "ぷろふぃーる詳細",
+          "商品詳細",
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
         ),
         backgroundColor: Colors.white,
@@ -34,7 +60,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
             return Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || !snapshot.data!.exists) {
-            return Center(child: Text("プロフィールが見つかりません"));
+            return Center(child: Text("商品が見つかりません"));
           }
 
           var profile = snapshot.data!.data() as Map<String, dynamic>;
@@ -45,59 +71,50 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // プロフィール画像
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundImage: profile['imageUrl'] != null
-                        ? NetworkImage(profile['imageUrl'])
-                        : null,
-                    child: profile['imageUrl'] == null
-                        ? Icon(Icons.person, size: 60, color: Colors.grey)
-                        : null,
-                  ),
+                  if (profile['imageUrls'] != null && profile['imageUrls'].isNotEmpty)
+                    Wrap(
+                      spacing: 8.0,
+                      runSpacing: 8.0,
+                      children: profile['imageUrls']
+                          .take(5)
+                          .map<Widget>((imageUrl) => ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  imageUrl,
+                                  width: 200,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                  if (profile['imageUrls'] == null || profile['imageUrls'].isEmpty)
+                    Container(
+                      width: 200,
+                      height: 200,
+                      color: Colors.grey[300],
+                      child: Icon(Icons.image, size: 100, color: Colors.grey[600]),
+                    ),
                   SizedBox(height: 16),
 
-                  // 名前
-                  Text(
-                    profile['name'] ?? '名前なし',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-                  ),
-                  SizedBox(height: 8),
-
-                  // タグ
-                  Wrap(
-                    spacing: 8,
-                    children: [
-                      if (profile['tag1'] != null) _buildTag(profile['tag1']),
-                      if (profile['tag2'] != null) _buildTag(profile['tag2']),
-                    ],
-                  ),
-                  SizedBox(height: 16),
-
-                  // プロフィール情報
-                  _buildProfileSection("基本情報", [
-                    _buildProfileRow("タグ", profile['tag']),
+                  _buildProfileSection("商品情報", [
+                    _buildProfileRow("商品名", profile['name'] ?? '商品名なし'),
+                    _buildProfileRow("カテゴリ", profile['category']),
+                    _buildProfileRow("価格", profile['price'] != null ? '¥${profile['price']}' : '不明'),
                     _buildProfileRow("説明", profile['description']),
-                    _buildProfileRow("性別", profile['gender']),
-                    _buildProfileRow("誕生日", profile['birthDate']),
-                    _buildProfileRow("年齢", profile['age']),
-                    _buildProfileRow("血液型", profile['bloodType']),
-                    _buildProfileRow("身長", profile['height']),
-                    _buildProfileRow("性格", profile['personality']),
+                    _buildProfileRow("作成日", profile['createdAt']?.toDate().toString() ?? '不明'),
                   ]),
 
-                  _buildProfileSection("趣味・好み", [
-                    _buildProfileRow("趣味", profile['hobbies']),
-                    _buildProfileRow("好き / 嫌い", profile['likesDislikes']),
-                  ]),
-
-                  _buildProfileSection("その他の情報", [
-                    _buildProfileRow("家族構成", profile['familyStructure']),
-                    _buildProfileRow("悩み", profile['remarks']),
-                    _buildProfileRow("その他（話し方など）", profile['otherDetails']),
-                  ]),
-
-                  // 一覧画面に戻るボタン
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _purchaseItem,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    ),
+                    child: Text("購入する", style: TextStyle(fontSize: 16, color: Colors.white)),
+                  ),
                   SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
@@ -105,15 +122,11 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                     ),
-                    child: Text("一覧画面へ戻る",
-                        style: TextStyle(fontSize: 16, color: Colors.white)),
+                    child: Text("一覧画面へ戻る", style: TextStyle(fontSize: 16, color: Colors.white)),
                   ),
-                  // 一覧画面に戻るボタン
                 ],
               ),
             ),
@@ -123,7 +136,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     );
   }
 
-  // プロフィール情報の表示用
   Widget _buildProfileSection(String title, List<Widget> children) {
     return Container(
       margin: EdgeInsets.only(bottom: 16),
@@ -143,11 +155,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue)),
+          Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue)),
           SizedBox(height: 8),
           ...children,
         ],
@@ -155,14 +163,12 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     );
   }
 
-  // プロフィールの項目を整える
   Widget _buildProfileRow(String label, dynamic value) {
     return Padding(
       padding: EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Text("$label: ",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text("$label: ", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           Expanded(
             child: Text(
               value != null ? value.toString() : '不明',
@@ -172,19 +178,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  // タグ表示用
-  Widget _buildTag(String tag) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(
-        color: Colors.blue.shade100,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(tag,
-          style: TextStyle(fontSize: 14, color: Colors.blue.shade900)),
     );
   }
 }
