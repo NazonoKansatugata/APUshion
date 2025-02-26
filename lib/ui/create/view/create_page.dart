@@ -8,8 +8,8 @@ import 'package:apusion/ui/home/home_page.dart';  // ここを確認してイン
 import 'package:firebase_storage/firebase_storage.dart';
 
 class CreateScreen extends StatelessWidget {
-  final String? profileId; // 編集時に渡される商品ID
-  final Map<String, dynamic>? initialProfileData; // 初期データ
+  final String? profileId;
+  final Map<String, dynamic>? initialProfileData;
 
   CreateScreen({Key? key, this.profileId, this.initialProfileData}) : super(key: key);
 
@@ -18,22 +18,17 @@ class CreateScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) {
         final viewModel = CreateScreenViewModel();
-        
-        // 編集モードなら初期値をセット
         if (initialProfileData != null) {
           viewModel.nameController.text = initialProfileData!['name'] ?? '';
           viewModel.descriptionController.text = initialProfileData!['description'] ?? '';
           viewModel.priceController.text = initialProfileData!['price']?.toString() ?? '';
-          viewModel.categoryController.text = initialProfileData!['category'] ?? '';
-          viewModel.imageUrlController.text = initialProfileData!['imageUrl'] ?? '';
+          viewModel.selectedCategory = initialProfileData!['category'] ?? '';
+          viewModel.imageUrls = List<String>.from(initialProfileData!['imageUrls'] ?? []);
         }
-
         return viewModel;
       },
       child: Scaffold(
-        appBar: AppBar(
-          title: Text(profileId != null ? "商品編集" : "商品作成"), // 編集ならタイトル変更
-        ),
+        appBar: AppBar(title: Text(profileId != null ? "商品編集" : "商品作成")),
         body: Consumer<CreateScreenViewModel>(
           builder: (context, viewModel, child) {
             return SingleChildScrollView(
@@ -41,110 +36,56 @@ class CreateScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // 商品名
                   TextField(
                     controller: viewModel.nameController,
-                    decoration: InputDecoration(
-                      labelText: "商品名",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                    ),
+                    decoration: InputDecoration(labelText: "商品名"),
                   ),
                   const SizedBox(height: 20),
-                  
-                  // 商品説明
                   TextField(
                     controller: viewModel.descriptionController,
-                    decoration: InputDecoration(
-                      labelText: "商品説明",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                    ),
+                    decoration: InputDecoration(labelText: "商品説明"),
                   ),
                   const SizedBox(height: 20),
-
-                  // 価格
                   TextField(
                     controller: viewModel.priceController,
                     keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      labelText: "価格",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                    ),
+                    decoration: InputDecoration(labelText: "価格"),
                   ),
                   const SizedBox(height: 20),
 
-                  // カテゴリ
-                  TextField(
-                    controller: viewModel.categoryController,
-                    decoration: InputDecoration(
-                      labelText: "カテゴリ",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                    ),
+                  DropdownButtonFormField<String>(
+                    value: viewModel.selectedCategory,
+                    items: ['電子レンジ', '冷蔵庫', '洗濯機'].map((category) {
+                      return DropdownMenuItem(value: category, child: Text(category));
+                    }).toList(),
+                    onChanged: (value) => viewModel.selectedCategory = value!,
+                    decoration: InputDecoration(labelText: "カテゴリ"),
                   ),
                   const SizedBox(height: 20),
 
-                  // 画像URL
-                  TextField(
-                    controller: viewModel.imageUrlController,
-                    decoration: InputDecoration(
-                      labelText: "画像URL",
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      filled: true,
-                      fillColor: Colors.grey[100],
-                    ),
+                  Wrap(
+                    children: viewModel.imageUrls.map((imageUrl) {
+                      return Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Image.network(imageUrl, width: 80, height: 80),
+                      );
+                    }).toList(),
                   ),
-                  const SizedBox(height: 20),
-
-                  // 画像選択ボタン
                   ElevatedButton(
-                    onPressed: () => _pickImage(viewModel),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 25),
-                    ),
-                    child: const Text('画像を選択'),
+                    onPressed: () => _pickImages(viewModel),
+                    child: const Text('画像を選択（最大5枚）'),
                   ),
                   const SizedBox(height: 20),
 
-                  // 出品ボタン
                   Center(
                     child: ElevatedButton(
                       onPressed: () {
                         if (profileId == null) {
-                          viewModel.submitProfile(context); // 新規作成
+                          viewModel.submitProfile(context);
                         } else {
-                          viewModel.updateProfile(context, profileId!); // 編集
+                          viewModel.updateProfile(context, profileId!);
                         }
                       },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blue,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 32),
-                      ),
                       child: const Text("決定！"),
                     ),
                   ),
@@ -157,24 +98,20 @@ class CreateScreen extends StatelessWidget {
     );
   }
 
-  // 画像アップロードの処理
-  Future<void> _pickImage(CreateScreenViewModel viewModel) async {
+  Future<void> _pickImages(CreateScreenViewModel viewModel) async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
-      allowMultiple: false,
+      allowMultiple: true,
     );
-    if (result == null) {
-      return;
+    if (result == null) return;
+
+    for (var file in result.files.take(5)) {
+      final storageRef = FirebaseStorage.instance.ref().child('uploads/${file.name}');
+      final uploadTask = storageRef.putData(file.bytes!);
+      await uploadTask.whenComplete(() async {
+        final downloadUrl = await storageRef.getDownloadURL();
+        viewModel.addImageUrl(downloadUrl);
+      });
     }
-    final file = result.files.single;
-
-    final storageRef = FirebaseStorage.instance.ref().child('uploads/${file.name}');
-    final metadata = SettableMetadata(contentType: 'image/png');
-    final uploadTask = storageRef.putData(file.bytes!, metadata);
-
-    await uploadTask.whenComplete(() async {
-      final downloadUrl = await storageRef.getDownloadURL();
-      viewModel.imageUrlController.text = downloadUrl;
-    });
   }
 }

@@ -45,27 +45,36 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // 商品画像
-                  CircleAvatar(
-                    radius: 60,
-                    backgroundImage: profile['imageUrl'] != null
-                        ? NetworkImage(profile['imageUrl'])
-                        : null,
-                    child: profile['imageUrl'] == null
-                        ? Icon(Icons.image, size: 60, color: Colors.grey)
-                        : null,
-                  ),
+                  // 商品画像（最大5枚表示）
+                  if (profile['imageUrls'] != null && profile['imageUrls'].isNotEmpty)
+                    Wrap(
+                      spacing: 8.0,
+                      runSpacing: 8.0,
+                      children: profile['imageUrls']
+                          .take(5)
+                          .map<Widget>((imageUrl) => ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.network(
+                                  imageUrl,
+                                  width: 200,
+                                  height: 200,
+                                  fit: BoxFit.cover,
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                  if (profile['imageUrls'] == null || profile['imageUrls'].isEmpty)
+                    Container(
+                      width: 200,
+                      height: 200,
+                      color: Colors.grey[300],
+                      child: Icon(Icons.image, size: 100, color: Colors.grey[600]),
+                    ),
                   SizedBox(height: 16),
-
-                  // 商品名
-                  Text(
-                    profile['name'] ?? '商品名なし',
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
-                  ),
-                  SizedBox(height: 8),
 
                   // 商品情報
                   _buildProfileSection("商品情報", [
+                    _buildProfileRow("商品名", profile['name'] ?? '商品名なし'),
                     _buildProfileRow("カテゴリ", profile['category']),
                     _buildProfileRow("価格", profile['price'] != null ? '¥${profile['price']}' : '不明'),
                     _buildProfileRow("説明", profile['description']),
