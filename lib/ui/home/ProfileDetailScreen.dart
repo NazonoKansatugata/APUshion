@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:apusion/ui/create/view/create_page.dart';
 
 class ProfileDetailScreen extends StatefulWidget {
   final String documentId;
@@ -12,9 +13,39 @@ class ProfileDetailScreen extends StatefulWidget {
 }
 
 class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
-  Future<void> _purchaseItem() async {
+  String? currentUserId;
+  bool isOwner = false; // 現在のユーザーが出品者かどうかを判定
+  Map<String, dynamic>? profileData;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkIfOwner();
+  }
+
+  Future<void> _checkIfOwner() async {
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
+    if (user == null) return;
+
+    setState(() {
+      currentUserId = user.uid;
+    });
+
+    DocumentSnapshot profileSnapshot = await FirebaseFirestore.instance
+        .collection('profiles')
+        .doc(widget.documentId)
+        .get();
+
+    if (profileSnapshot.exists) {
+      setState(() {
+        profileData = profileSnapshot.data() as Map<String, dynamic>;
+        isOwner = profileData!['userId'] == currentUserId;
+      });
+    }
+  }
+
+  Future<void> _purchaseItem() async {
+    if (currentUserId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("ログインしてください")),
       );
@@ -25,7 +56,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
       await FirebaseFirestore.instance
           .collection('purchases')
           .doc(widget.documentId)
-          .set({'buyerId': user.uid, 'purchaseDate': DateTime.now()});
+          .set({'buyerId': currentUserId, 'purchaseDate': DateTime.now()});
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("購入が完了しました")),
@@ -33,6 +64,20 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("購入に失敗しました: $e")),
+      );
+    }
+  }
+
+  void _editItem() {
+    if (profileData != null) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CreateScreen(
+            profileId: widget.documentId,
+            initialProfileData: profileData!,
+          ),
+        ),
       );
     }
   }
@@ -71,6 +116,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // 画像表示（最大5枚）
                   if (profile['imageUrls'] != null && profile['imageUrls'].isNotEmpty)
                     Wrap(
                       spacing: 8.0,
@@ -97,25 +143,41 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                     ),
                   SizedBox(height: 16),
 
+                  // 商品情報
                   _buildProfileSection("商品情報", [
                     _buildProfileRow("商品名", profile['name'] ?? '商品名なし'),
-                    _buildProfileRow("カテゴリ", profile['category']),
+                    _buildCategoryTag(profile['category']),
                     _buildProfileRow("価格", profile['price'] != null ? '¥${profile['price']}' : '不明'),
                     _buildProfileRow("説明", profile['description']),
                     _buildProfileRow("作成日", profile['createdAt']?.toDate().toString() ?? '不明'),
                   ]),
 
                   SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: _purchaseItem,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                    ),
-                    child: Text("購入する", style: TextStyle(fontSize: 16, color: Colors.white)),
-                  ),
+
+                  // 購入 or 編集ボタン
+                  isOwner
+                      ? ElevatedButton(
+                          onPressed: _editItem,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orange,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                          ),
+                          child: Text("編集する", style: TextStyle(fontSize: 16, color: Colors.white)),
+                        )
+                      : ElevatedButton(
+                          onPressed: _purchaseItem,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.green,
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                          ),
+                          child: Text("購入する", style: TextStyle(fontSize: 16, color: Colors.white)),
+                        ),
+
                   SizedBox(height: 16),
+
+                  // 戻るボタン
                   ElevatedButton(
                     onPressed: () {
                       Navigator.pop(context);
@@ -136,6 +198,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     );
   }
 
+  // セクションデザイン
   Widget _buildProfileSection(String title, List<Widget> children) {
     return Container(
       margin: EdgeInsets.only(bottom: 16),
@@ -163,20 +226,39 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     );
   }
 
-  Widget _buildProfileRow(String label, dynamic value) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Text("$label: ", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-          Expanded(
-            child: Text(
-              value != null ? value.toString() : '不明',
-              style: TextStyle(fontSize: 16),
-              overflow: TextOverflow.ellipsis,
-            ),
+  // 情報行デザイン（エラーの原因となっていた関数）
+Widget _buildProfileRow(String label, dynamic value) {
+  return Padding(
+    padding: EdgeInsets.only(bottom: 8),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text("$label: ", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        Expanded(
+          child: Text(
+            value != null ? value.toString() : '不明',
+            style: TextStyle(fontSize: 16),
+            overflow: TextOverflow.ellipsis,
           ),
-        ],
+        ),
+      ],
+    ),
+  );
+}
+
+  // カテゴリータグデザイン
+  Widget _buildCategoryTag(String? category) {
+    if (category == null || category.isEmpty) return SizedBox.shrink();
+    return Container(
+      margin: EdgeInsets.only(top: 8),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade100,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        category,
+        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.blue.shade800),
       ),
     );
   }

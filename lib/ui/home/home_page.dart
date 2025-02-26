@@ -21,9 +21,9 @@ class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
   final List<Widget> _screens = [
-    PurchasedItemsScreen(),
-    CreateScreen(),
     HomeScreen(),
+    CreateScreen(),
+    PurchasedItemsScreen(),
     FavoriteScreen(),
     UserScreen(),
   ];
@@ -47,9 +47,9 @@ class _MainScreenState extends State<MainScreen> {
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: '購入済み'),
-          BottomNavigationBarItem(icon: Icon(Icons.create), label: 'クリエイト'),
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'ホーム'),
+          BottomNavigationBarItem(icon: Icon(Icons.create), label: 'クリエイト'),
+          BottomNavigationBarItem(icon: Icon(Icons.shopping_cart), label: '購入済み'),
           BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'お気に入り'),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'ユーザー'),
         ],
@@ -61,4 +61,3 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 }
-
