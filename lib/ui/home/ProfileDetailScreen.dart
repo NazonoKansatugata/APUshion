@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProfileDetailScreen extends StatefulWidget {
   final String documentId;
@@ -11,6 +12,31 @@ class ProfileDetailScreen extends StatefulWidget {
 }
 
 class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
+  Future<void> _purchaseItem() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("ログインしてください")),
+      );
+      return;
+    }
+
+    try {
+      await FirebaseFirestore.instance
+          .collection('purchases')
+          .doc(widget.documentId)
+          .set({'buyerId': user.uid, 'purchaseDate': DateTime.now()});
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("購入が完了しました")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("購入に失敗しました: $e")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,7 +71,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // 商品画像（最大5枚表示）
                   if (profile['imageUrls'] != null && profile['imageUrls'].isNotEmpty)
                     Wrap(
                       spacing: 8.0,
@@ -72,7 +97,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                     ),
                   SizedBox(height: 16),
 
-                  // 商品情報
                   _buildProfileSection("商品情報", [
                     _buildProfileRow("商品名", profile['name'] ?? '商品名なし'),
                     _buildProfileRow("カテゴリ", profile['category']),
@@ -81,7 +105,16 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                     _buildProfileRow("作成日", profile['createdAt']?.toDate().toString() ?? '不明'),
                   ]),
 
-                  // 一覧画面に戻るボタン
+                  SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _purchaseItem,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    ),
+                    child: Text("購入する", style: TextStyle(fontSize: 16, color: Colors.white)),
+                  ),
                   SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
@@ -89,13 +122,10 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                     ),
-                    child: Text("一覧画面へ戻る",
-                        style: TextStyle(fontSize: 16, color: Colors.white)),
+                    child: Text("一覧画面へ戻る", style: TextStyle(fontSize: 16, color: Colors.white)),
                   ),
                 ],
               ),
@@ -106,7 +136,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     );
   }
 
-  // 商品情報の表示用
   Widget _buildProfileSection(String title, List<Widget> children) {
     return Container(
       margin: EdgeInsets.only(bottom: 16),
@@ -126,11 +155,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.blue)),
+          Text(title, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue)),
           SizedBox(height: 8),
           ...children,
         ],
@@ -138,14 +163,12 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     );
   }
 
-  // 商品の項目を整える
   Widget _buildProfileRow(String label, dynamic value) {
     return Padding(
       padding: EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Text("$label: ",
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+          Text("$label: ", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           Expanded(
             child: Text(
               value != null ? value.toString() : '不明',
