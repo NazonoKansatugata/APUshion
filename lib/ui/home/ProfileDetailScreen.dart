@@ -193,55 +193,72 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
-    final authVM = context.watch<AuthViewModel>();
-    final bool isAdmin = authVM.isAdmin();
+Widget build(BuildContext context) {
+  final authVM = context.watch<AuthViewModel>();
+  final bool isAdmin = authVM.isAdmin();
 
-    return Scaffold(
-      backgroundColor: Colors.purple.shade50,
-      appBar: AppBar(
-        title: Text(
-          "商品詳細",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
-        ),
-        backgroundColor: Colors.white,
-        elevation: 2,
-        iconTheme: IconThemeData(color: Colors.black),
+  return Scaffold(
+    backgroundColor: Colors.purple.shade50,
+    appBar: AppBar(
+      title: Text(
+        "商品詳細",
+        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              Text(
-                profileData?['name'] ?? '商品名なし',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 16),
+      backgroundColor: Colors.white,
+      elevation: 2,
+      iconTheme: IconThemeData(color: Colors.black),
+    ),
+    body: SingleChildScrollView(
+      child: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Text(
+              profileData?['name'] ?? '商品名なし',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 16),
+            Text(
+              profileData?['description'] ?? '商品説明なし',
+              style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+            ),
+            SizedBox(height: 16),
+            if (isAdmin) 
+              ElevatedButton(
+                onPressed: _editItem,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                ),
+                child: Text("編集", style: TextStyle(fontSize: 16, color: Colors.white)),
+              )
+            else 
               isPurchased
-                  ? ElevatedButton(
-                      onPressed: _cancelPurchase,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.red,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                      ),
-                      child: Text("購入取り消し", style: TextStyle(fontSize: 16, color: Colors.white)),
-                    )
-                  : ElevatedButton(
-                      onPressed: _purchaseItem,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                      ),
-                      child: Text("購入する", style: TextStyle(fontSize: 16, color: Colors.white)),
+                ? ElevatedButton(
+                    onPressed: _cancelPurchase,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                     ),
-            ],
-          ),
+                    child: Text("購入取り消し", style: TextStyle(fontSize: 16, color: Colors.white)),
+                  )
+                : ElevatedButton(
+                    onPressed: _purchaseItem,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    ),
+                    child: Text("購入する", style: TextStyle(fontSize: 16, color: Colors.white)),
+                  ),
+          ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 }
