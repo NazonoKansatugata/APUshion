@@ -10,29 +10,12 @@ class AuthViewModel extends ChangeNotifier {
   // 現在ログイン中のユーザーを表す (nullの場合は未ログイン)
   UserModel? currentUser;
 
-  // GitHubプロバイダ
-  final githubProvider = GithubAuthProvider();
+  // 運営ユーザーID
+  static const String adminUid = '0jbF0jcGAaeWyOiZ75LzFbmfQK22';
 
-  /// GitHubでログイン
-  Future<void> signInWithGitHub() async {
-    try {
-      final userCredential =
-          await _firebaseAuth.signInWithPopup(githubProvider);
-
-      // 取得したFirebaseのUserをUserModelに変換して保持する
-      final user = userCredential.user;
-      if (user != null) {
-        currentUser = _convertToUserModel(user); // FirebaseのUserをUserModelに変換
-        // ログイン成功時の処理
-        // ログイン成功時にFirestoreにユーザー情報を保存する
-        await storeUserProfile(currentUser!);
-        debugPrint("GitHubログイン成功: ${currentUser!.toJson()}");
-      }
-    } catch (e, st) {
-      debugPrint("GitHubログイン失敗: $e\n$st");
-      rethrow; // 必要に応じて再スローやエラー管理を行う
-    }
-    notifyListeners(); // UIに変更があったことを通知
+  /// 運営判定メソッド
+  bool isAdmin() {
+    return currentUser != null && currentUser!.uid == adminUid;
   }
 
   /// メールアドレスでログイン
@@ -44,14 +27,13 @@ class AuthViewModel extends ChangeNotifier {
       );
       final user = userCredential.user;
       if (user != null) {
-        currentUser = _convertToUserModel(user); // FirebaseのUserをUserModelに変換
-        // ログイン成功時の処理
-        await storeUserProfile(currentUser!); // ユーザー情報をFirestoreに保存
+        currentUser = _convertToUserModel(user);
+        await storeUserProfile(currentUser!);
         debugPrint("メールログイン成功: ${currentUser!.toJson()}");
       }
     } catch (e, st) {
       debugPrint("メールログイン失敗: $e\n$st");
-      rethrow; // ここで例外処理を書くか、呼び出し元で処理
+      rethrow;
     }
     notifyListeners();
   }
@@ -66,8 +48,7 @@ class AuthViewModel extends ChangeNotifier {
       final user = userCredential.user;
       if (user != null) {
         currentUser = _convertToUserModel(user);
-        // アカウント作成成功時の処理
-        await storeUserProfile(currentUser!); // ユーザー情報をFirestoreに保存
+        await storeUserProfile(currentUser!);
         debugPrint("メールでアカウント作成成功: ${currentUser!.toJson()}");
       }
     } catch (e, st) {
@@ -99,15 +80,15 @@ class AuthViewModel extends ChangeNotifier {
     if (user != null) {
       final userRef =
           FirebaseFirestore.instance.collection('users').doc(user.uid);
-      await userRef.set(usermodel.toJson()); //ユーザー情報を保存
+      await userRef.set(usermodel.toJson());
       await userRef
           .collection('createdProfiles')
           .doc('null')
-          .set({}); // ユーザー情報の初期化
+          .set({});
       await userRef
           .collection('likedProfiles')
           .doc('null')
-          .set({}); // ユーザー情報の初期化
+          .set({});
       debugPrint("ユーザー情報をFirestoreに保存しました: ${usermodel.toJson()}");
     }
     notifyListeners();
@@ -141,17 +122,14 @@ class AuthViewModel extends ChangeNotifier {
   }) async {
     final user = _firebaseAuth.currentUser;
     if (user != null) {
-      // FirebaseAuth のユーザー情報を更新 (name, photoURL)
       if (name != null || photoURL != null) {
         await user.updateProfile(
           displayName: name ?? user.displayName,
           photoURL: photoURL ?? user.photoURL,
         );
-        // 最新の情報を取得するためにユーザーを再読み込み
         await user.reload();
       }
 
-      // Firestore のユーザードキュメントを更新
       final userRef =
           FirebaseFirestore.instance.collection('users').doc(user.uid);
       final Map<String, dynamic> updatedData = {};
@@ -161,7 +139,6 @@ class AuthViewModel extends ChangeNotifier {
         await userRef.update(updatedData);
       }
 
-      // ローカルの currentUser 情報も更新
       if (currentUser != null) {
         currentUser!.name = name ?? currentUser!.name;
         currentUser!.photoURL = photoURL ?? currentUser!.photoURL;

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // FirebaseAuthのインポート
-
 import 'ProfileDetailScreen.dart';
 
 class ProfileCard extends StatefulWidget {
@@ -42,8 +41,9 @@ class _ProfileCardState extends State<ProfileCard> {
   void _toggleFavorite(BuildContext context) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("ログインしてください")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("ログインしてください")),
+      );
       return;
     }
 
@@ -54,8 +54,9 @@ class _ProfileCardState extends State<ProfileCard> {
           .collection('likedProfiles')
           .doc(widget.documentId)
           .delete();
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("お気に入りを解除しました")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("お気に入りを解除しました")),
+      );
     } else {
       await FirebaseFirestore.instance
           .collection('users')
@@ -63,8 +64,9 @@ class _ProfileCardState extends State<ProfileCard> {
           .collection('likedProfiles')
           .doc(widget.documentId)
           .set({'isFavorite': true});
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("お気に入りに追加しました")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("お気に入りに追加しました")),
+      );
     }
 
     setState(() {
@@ -87,7 +89,7 @@ class _ProfileCardState extends State<ProfileCard> {
         margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         child: ListTile(
           leading: ClipRRect(
-            borderRadius: BorderRadius.circular(8), // 角を丸める場合
+            borderRadius: BorderRadius.circular(8), // 角を丸める
             child: widget.profile['imageUrls'] != null && widget.profile['imageUrls'].isNotEmpty
                 ? Image.network(
                     widget.profile['imageUrls'][0], // 1枚目を表示
@@ -107,10 +109,6 @@ class _ProfileCardState extends State<ProfileCard> {
             children: [
               if (widget.profile['category'] != null)
                 _buildTag(widget.profile['category']),
-              if (widget.profile['tag'] != null)
-                ...widget.profile['tag']
-                    .map<Widget>((tag) => _buildTag(tag))
-                    .toList(),
             ],
           ),
           trailing: IconButton(

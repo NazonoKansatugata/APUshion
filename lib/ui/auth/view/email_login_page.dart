@@ -40,11 +40,7 @@ class _EmailLoginPage extends State<EmailLoginPage> {
       if (authVM.currentUser != null) {
         print("ログイン成功: ${authVM.currentUser!.toJson()}");
 
-        // テキストフィールドクリア
-        emailController.clear();
-        passwordController.clear();
-
-        // メイン画面に遷移
+        // 運営判定 (画面遷移は共通で MainScreen)
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => MainScreen()),
@@ -63,25 +59,12 @@ class _EmailLoginPage extends State<EmailLoginPage> {
     }
   }
 
-  /// テストログイン用
-  Future<void> _testLogin() async {
-    // テストユーザのメールアドレスとパスワード
-    final testEmail = 'test@test.com';
-    final testPassword = 'password';
-
-    emailController.text = testEmail;
-    passwordController.text = testPassword;
-
-    await _login(); // 上記の _login() を使い回し
-  }
-
   /// パスワードリセット
   Future<void> _resetPassword() async {
     final authVM = context.read<AuthViewModel>();
 
     try {
       await authVM.resetPassword(emailController.text);
-      // 必要に応じてユーザーに完了メッセージを表示
       print("${emailController.text} へパスワードリセットメールを送信しました");
     } on FirebaseAuthException catch (e) {
       print('パスワードリセット失敗: $e');
@@ -141,10 +124,6 @@ class _EmailLoginPage extends State<EmailLoginPage> {
                 ElevatedButton(
                   child: const Text('ログイン'),
                   onPressed: _login,
-                ),
-                ElevatedButton(
-                  child: const Text('テストログイン'),
-                  onPressed: _testLogin,
                 ),
                 ElevatedButton(
                   onPressed: _resetPassword,

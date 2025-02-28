@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:apusion/ui/create/view_model/create_view_model.dart';
-import 'package:apusion/ui/auth/view/auth_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:apusion/ui/home/home_page.dart';  // ここを確認してインポートしてください
 import 'package:firebase_storage/firebase_storage.dart';
 
 class CreateScreen extends StatelessWidget {
@@ -15,6 +13,9 @@ class CreateScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = FirebaseAuth.instance.currentUser;
+    final isAdmin = user?.uid == '0jbF0jcGAaeWyOiZ75LzFbmfQK22';
+
     return ChangeNotifierProvider(
       create: (_) {
         final viewModel = CreateScreenViewModel();
@@ -24,6 +25,8 @@ class CreateScreen extends StatelessWidget {
           viewModel.priceController.text = initialProfileData!['price']?.toString() ?? '';
           viewModel.selectedCategory = initialProfileData!['category'] ?? '';
           viewModel.imageUrls = List<String>.from(initialProfileData!['imageUrls'] ?? []);
+          viewModel.storeController.text = initialProfileData!['store'] ?? '本店';
+          viewModel.visitDateController.text = initialProfileData!['visitDate'] ?? '';
         }
         return viewModel;
       },
@@ -46,13 +49,13 @@ class CreateScreen extends StatelessWidget {
                     decoration: InputDecoration(labelText: "商品説明"),
                   ),
                   const SizedBox(height: 20),
-                  TextField(
-                    controller: viewModel.priceController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(labelText: "価格"),
-                  ),
+                  if (isAdmin)
+                    TextField(
+                      controller: viewModel.priceController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: "価格"),
+                    ),
                   const SizedBox(height: 20),
-
                   DropdownButtonFormField<String>(
                     value: viewModel.selectedCategory,
                     items: ['電子レンジ', '冷蔵庫', '洗濯機'].map((category) {
@@ -62,7 +65,6 @@ class CreateScreen extends StatelessWidget {
                     decoration: InputDecoration(labelText: "カテゴリ"),
                   ),
                   const SizedBox(height: 20),
-
                   Wrap(
                     children: viewModel.imageUrls.map((imageUrl) {
                       return Padding(
@@ -77,13 +79,51 @@ class CreateScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
 
+                  // 一般ユーザーと運営で異なるフィールド
+                  if (isAdmin)
+                    DropdownButtonFormField<String>(
+                      value: viewModel.storeController.text.isNotEmpty
+                          ? viewModel.storeController.text
+                          : '本店',
+                      items: ['本店'].map((store) {
+                        return DropdownMenuItem(value: store, child: Text(store));
+                      }).toList(),
+                      onChanged: (value) {
+                        viewModel.storeController.text = value!;
+                      },
+                      decoration: InputDecoration(labelText: "取り扱い店舗"),
+                    )
+                  else
+                    Column(
+                      children: [
+                        TextField(
+                          controller: viewModel.visitDateController,
+                          decoration: InputDecoration(labelText: "来店予定日"),
+                        ),
+                        const SizedBox(height: 20),
+                        DropdownButtonFormField<String>(
+                          value: viewModel.storeController.text.isNotEmpty
+                              ? viewModel.storeController.text
+                              : '本店',
+                          items: ['本店'].map((store) {
+                            return DropdownMenuItem(value: store, child: Text(store));
+                          }).toList(),
+                          onChanged: (value) {
+                            viewModel.storeController.text = value!;
+                          },
+                          decoration: InputDecoration(labelText: "来店店舗"),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 20),
+
                   Center(
                     child: ElevatedButton(
                       onPressed: () {
                         if (profileId == null) {
-                          viewModel.submitProfile(context);
+                          viewModel.submitProfile(context, isAdmin);
                         } else {
-                          viewModel.updateProfile(context, profileId!);
+                          viewModel.updateProfile(context, profileId!, isAdmin);
                         }
                       },
                       child: const Text("決定！"),
