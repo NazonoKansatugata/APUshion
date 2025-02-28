@@ -69,7 +69,7 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text(
-          "ぷろふぃーるはぶ",
+          "APUshion",
           style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
         ),
         backgroundColor: Colors.transparent,
