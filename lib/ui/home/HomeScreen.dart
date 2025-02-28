@@ -1,16 +1,11 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'ProfileCard.dart';
+import 'ProfileListScreen.dart'; // 全商品一覧画面
 import 'package:apusion/ui/favorite/favorite_page.dart'; // お気に入り画面のインポート
 
-class HomeScreen extends StatefulWidget {
-  @override
-  _HomeScreenState createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  String selectedCategory = "すべて"; // デフォルトのカテゴリ
-
+class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,31 +13,13 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Padding(
           padding: EdgeInsets.only(top: 20),
           child: Text(
-            "ぷろふぃーる一覧",
+            "おすすめ商品",
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
           ),
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         actions: [
-          Padding(
-            padding: EdgeInsets.only(top: 20, right: 16),
-            child: DropdownButton<String>(
-              value: selectedCategory,
-              dropdownColor: Colors.white,
-              items: ["すべて", "電子レンジ", "冷蔵庫", "洗濯機"]
-                  .map((category) => DropdownMenuItem(
-                        value: category,
-                        child: Text(category),
-                      ))
-                  .toList(),
-              onChanged: (value) {
-                setState(() {
-                  selectedCategory = value!;
-                });
-              },
-            ),
-          ),
           Padding(
             padding: EdgeInsets.only(top: 20, right: 16),
             child: IconButton(
@@ -70,51 +47,60 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             SizedBox(height: kToolbarHeight + 30), // 余白を増やす
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: selectedCategory == "すべて"
-                    ? FirebaseFirestore.instance.collection('profiles').snapshots()
-                    : FirebaseFirestore.instance
-                        .collection('profiles')
-                        .where('category', isEqualTo: selectedCategory)
-                        .snapshots(),
+              child: FutureBuilder<QuerySnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('profiles')
+                    .where('status', isEqualTo: '出品中') // 出品中の商品のみ取得
+                    .get(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return Center(child: CircularProgressIndicator());
                   }
+
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                     return Center(
-                        child: Text(
-                      "プロフィールがありません",
-                      style: TextStyle(color: Colors.white),
-                    ));
+                      child: Text(
+                        "出品中の商品がありません",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
                   }
-                  var profiles = snapshot.data!.docs;
-                  return FutureBuilder<QuerySnapshot>(
-                    future: FirebaseFirestore.instance.collection('purchases').get(),
-                    builder: (context, purchaseSnapshot) {
-                      if (purchaseSnapshot.connectionState == ConnectionState.waiting) {
-                        return Center(child: CircularProgressIndicator());
-                      }
-                      List<String> purchasedItemIds = purchaseSnapshot.data?.docs
-                              .map((doc) => doc.id)
-                              .toList() ??
-                          [];
-                      var filteredProfiles =
-                          profiles.where((profile) => !purchasedItemIds.contains(profile.id)).toList();
-                      return ListView.builder(
-                        padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
-                        itemCount: filteredProfiles.length,
-                        itemBuilder: (context, index) {
-                          var profile = filteredProfiles[index].data() as Map<String, dynamic>;
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: ProfileCard(profile: profile, documentId: filteredProfiles[index].id),
-                          );
-                        },
+
+                  var profiles = snapshot.data!.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+
+                  // 🔥 ここでランダムに5つ選ぶ
+                  profiles.shuffle(Random());
+                  List<Map<String, dynamic>> randomProfiles = profiles.take(5).toList();
+
+                  return ListView.builder(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    itemCount: randomProfiles.length,
+                    itemBuilder: (context, index) {
+                      var profile = randomProfiles[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: ProfileCard(profile: profile, documentId: profile['id'] ?? 'unknown'),
                       );
                     },
                   );
                 },
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(16),
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ProfileListScreen()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text("すべての商品を見る", style: TextStyle(fontSize: 18, color: Colors.black)),
               ),
             ),
           ],

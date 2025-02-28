@@ -44,29 +44,74 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     }
   }
 
+    /// 購入処理 & 来店予定の追加
   Future<void> _purchaseItem() async {
     if (currentUserId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("ログインしてください")),
+        const SnackBar(content: Text("ログインしてください")),
       );
       return;
     }
 
-    try {
-      await FirebaseFirestore.instance
-          .collection('purchases')
-          .doc(widget.documentId)
-          .set({'buyerId': currentUserId, 'purchaseDate': DateTime.now()});
+    // 来店予定日を入力するダイアログを表示
+    final TextEditingController visitDateController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('来店予定日を入力'),
+          content: TextField(
+            controller: visitDateController,
+            decoration: const InputDecoration(
+              hintText: '例: 2024-01-01',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('キャンセル'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  // Firestore に購入情報を保存
+                  await FirebaseFirestore.instance
+                      .collection('purchases')
+                      .doc(widget.documentId)
+                      .set({
+                    'buyerId': currentUserId,
+                    'purchaseDate': DateTime.now(),
+                  });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("購入が完了しました")),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("購入に失敗しました: $e")),
-      );
-    }
+                  // Firestore に来店予定を保存
+                  await FirebaseFirestore.instance.collection('shopVisits').add({
+                    'userId': currentUserId,
+                    'userName':
+                        FirebaseAuth.instance.currentUser!.displayName ??
+                            '匿名ユーザー',
+                    'visitDate': visitDateController.text,
+                    'product': profileData?['name'] ?? '商品名なし',
+                    'createdAt': Timestamp.now(),
+                  });
+
+                  Navigator.pop(context); // ダイアログを閉じる
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text("購入が完了し、来店予定を追加しました")),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text("購入に失敗しました: $e")),
+                  );
+                }
+              },
+              child: const Text('購入'),
+            ),
+          ],
+        );
+      },
+    );
   }
+
 
   void _editItem() {
     if (profileData != null) {
