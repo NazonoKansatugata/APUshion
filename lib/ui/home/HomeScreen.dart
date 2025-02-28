@@ -1,170 +1,111 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'ProfileCard.dart';
+import 'ProfileListScreen.dart'; // 全商品一覧画面
 import 'package:apusion/ui/favorite/favorite_page.dart'; // お気に入り画面のインポート
-import 'package:apusion/ui/home/ProfileListScreen.dart'; // 一覧画面用
-import 'package:apusion/ui/home/ProfileCard.dart'; // カード用
 
 class HomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        title: Padding(
+          padding: EdgeInsets.only(top: 20),
+          child: Text(
+            "おすすめ商品",
+            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+        ),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        titleTextStyle: TextStyle(color: Colors.black),
         actions: [
-          IconButton(
-            icon: Icon(Icons.search, color: Colors.black),
-            onPressed: () {
-              // 検索機能の処理をここに追加
-              showSearch(context: context, delegate: CustomSearchDelegate());
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 16),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
-            child: Text("新着ぷろふぃーる",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ),
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('profiles')
-                  .orderBy('createdAt', descending: true)
-                  .limit(5)
-                  .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(child: Text("新着プロフィールがありません"));
-                }
-
-                var profiles = snapshot.data!.docs;
-
-                return ListView.builder(
-                  itemCount: profiles.length,
-                  itemBuilder: (context, index) {
-                    var profile =
-                        profiles[index].data() as Map<String, dynamic>;
-                    return ProfileCard(
-                        profile: profile, documentId: profiles[index].id);
-                  },
-                );
-              },
-            ),
-          ),
-          Center(
-            child: ElevatedButton(
+            padding: EdgeInsets.only(top: 20, right: 16),
+            child: IconButton(
+              icon: Icon(Icons.favorite, color: Colors.red),
               onPressed: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => ProfileListScreen()),
+                  MaterialPageRoute(builder: (context) => FavoriteScreen()),
                 );
               },
-              child: Text("一覧画面"),
             ),
           ),
-          SizedBox(height: 16),
         ],
       ),
-    );
-  }
-}
+      extendBodyBehindAppBar: true,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.deepPurple.shade400, Colors.pinkAccent.shade400],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Column(
+          children: [
+            SizedBox(height: kToolbarHeight + 30), // 余白を増やす
+            Expanded(
+              child: FutureBuilder<QuerySnapshot>(
+                future: FirebaseFirestore.instance
+                    .collection('profiles')
+                    .where('status', isEqualTo: '出品中') // 出品中の商品のみ取得
+                    .get(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  }
 
-// 検索機能のカスタムデリゲートを定義
-class CustomSearchDelegate extends SearchDelegate {
-  @override
-  List<Widget> buildActions(BuildContext context) {
-    return [
-      IconButton(
-        icon: Icon(Icons.clear),
-        onPressed: () {
-          query = '';
-        },
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return Center(
+                      child: Text(
+                        "出品中の商品がありません",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    );
+                  }
+
+                  var profiles = snapshot.data!.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+
+                  // 🔥 ここでランダムに5つ選ぶ
+                  profiles.shuffle(Random());
+                  List<Map<String, dynamic>> randomProfiles = profiles.take(5).toList();
+
+                  return ListView.builder(
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    itemCount: randomProfiles.length,
+                    itemBuilder: (context, index) {
+                      var profile = randomProfiles[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: ProfileCard(profile: profile, documentId: profile['id'] ?? 'unknown'),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+            Padding(
+              padding: EdgeInsets.all(16),
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ProfileListScreen()),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: EdgeInsets.symmetric(vertical: 12),
+                ),
+                child: Text("すべての商品を見る", style: TextStyle(fontSize: 18, color: Colors.black)),
+              ),
+            ),
+          ],
+        ),
       ),
-    ];
-  }
-
-  @override
-  Widget buildLeading(BuildContext context) {
-    return IconButton(
-      icon: Icon(Icons.arrow_back),
-      onPressed: () {
-        close(context, null);
-      },
-    );
-  }
-
-  @override
-  Widget buildResults(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('profiles')
-          .where('name', isGreaterThanOrEqualTo: query)
-          .where('name', isLessThanOrEqualTo: query + '\uf8ff')
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(child: Text("検索結果がありません"));
-        }
-
-        var profiles = snapshot.data!.docs;
-
-        return ListView.builder(
-          itemCount: profiles.length,
-          itemBuilder: (context, index) {
-            var profile = profiles[index].data() as Map<String, dynamic>;
-            return ProfileCard(
-                profile: profile, documentId: profiles[index].id);
-          },
-        );
-      },
-    );
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('profiles')
-          .where('name', isGreaterThanOrEqualTo: query)
-          .where('name', isLessThanOrEqualTo: query + '\uf8ff')
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(child: Text("検索候補がありません"));
-        }
-
-        var profiles = snapshot.data!.docs;
-
-        return ListView.builder(
-          itemCount: profiles.length,
-          itemBuilder: (context, index) {
-            var profile = profiles[index].data() as Map<String, dynamic>;
-            return ListTile(
-              title: Text(profile['name'] ?? '名前なし'),
-              onTap: () {
-                query = profile['name'];
-                showResults(context);
-              },
-            );
-          },
-        );
-      },
     );
   }
 }

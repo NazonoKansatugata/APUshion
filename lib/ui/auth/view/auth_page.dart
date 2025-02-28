@@ -16,178 +16,133 @@ class AuthPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // ChangeNotifierProvider で AuthViewModel を提供
     return ChangeNotifierProvider(
-        create: (_) => AuthViewModel(),
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text('ログイン・サインアップ'),
-          ),
-          body: Consumer<AuthViewModel>(
-            builder: (context, authVM, child) {
-              return Center(
-                child: Container(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: <Widget>[
-                      //Containerでラップしてmarginをつけて余白を作成した
-                      Container(
-                        width: 300,
-                        margin: EdgeInsets.all(10),
-                        child: ElevatedButton(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              HugeIcon(
-                                icon: HugeIcons.strokeRoundedMailAccount01,
-                                color: Colors.black,
-                                size: 24.0,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Center(
-                                  child: const Text(
-                                    'メールアドレスでログイン',
-                                    style: TextStyle(color: Colors.black),
-                                  ),
+      create: (_) => AuthViewModel(),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('ログイン・サインアップ'),
+        ),
+        body: Consumer<AuthViewModel>(
+          builder: (context, authVM, child) {
+            return Center(
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    // メールアドレスでログイン
+                    Container(
+                      width: 300,
+                      margin: const EdgeInsets.all(10),
+                      child: ElevatedButton(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon( // HugeIconをIconに変更
+                              Icons.mail,
+                              color: Colors.black,
+                              size: 24.0,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Center(
+                                child: const Text(
+                                  'メールアドレスでログイン',
+                                  style: TextStyle(color: Colors.black),
                                 ),
                               ),
-                            ],
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => EmailLoginPage()),
-                            );
-                          },
+                            ),
+                          ],
                         ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EmailLoginPage(),
+                            ),
+                          );
+                        },
                       ),
-                      // メールアドレスでログイン
+                    ),
 
-                      // GitHubでログイン
-                      Container(
-                        width: 300,
-                        margin: EdgeInsets.all(10),
-                        child: ElevatedButton(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              HugeIcon(
-                                icon: HugeIcons.strokeRoundedGithub01,
-                                color: Colors.black,
-                                size: 24.0,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Center(
-                                  child: const Text(
-                                    'GitHubでログイン',
-                                    style: TextStyle(color: Colors.black),
-                                  ),
+                    // メールアドレスでアカウント登録
+                    Container(
+                      width: 300,
+                      margin: const EdgeInsets.all(10),
+                      child: ElevatedButton(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon( // HugeIconをIconに変更
+                              Icons.person_add,
+                              color: Colors.black,
+                              size: 24.0,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Center(
+                                child: const Text(
+                                  'メールアドレスでアカウント登録',
+                                  style: TextStyle(color: Colors.black),
                                 ),
                               ),
-                            ],
-                          ),
-                          onPressed: () async {
-                            try {
-                              await authVM.signInWithGitHub();
-                              Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => MainScreen()),
-                              );
-                            } catch (e) {
-                              // エラー表示など行う
-                              debugPrint('GitHubログインエラー: $e');
-                            }
-                          },
+                            ),
+                          ],
                         ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => EmailSignUpPage(),
+                            ),
+                          );
+                        },
                       ),
-
-                      // メールアドレスでアカウント登録
-                      Container(
-                        width: 300,
-                        margin: EdgeInsets.all(10),
-                        child: ElevatedButton(
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              HugeIcon(
-                                icon: HugeIcons.strokeRoundedMailAccount01,
-                                color: Colors.black,
-                                size: 24.0,
-                              ),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                child: Center(
-                                  child: const Text(
-                                    'メールアドレスでアカウント登録',
-                                    style: TextStyle(color: Colors.black),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => EmailSignUpPage()),
-                            );
-                          },
+                    ),
+                    // ログアウト
+                    Container(
+                      width: 300,
+                      margin: const EdgeInsets.all(10),
+                      child: ElevatedButton(
+                        child: const Text(
+                          'ログアウト',
+                          style: TextStyle(color: Colors.black),
                         ),
+                        onPressed: () async {
+                          await authVM.signOut();
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => AuthPage(),
+                            ),
+                          );
+                        },
                       ),
-                      // ログアウト
-                      Container(
-                        width: 300,
-                        margin: EdgeInsets.all(10),
-                        child: ElevatedButton(
-                          child: const Text(
-                            'ログアウト',
-                            style: TextStyle(color: Colors.black),
-                          ),
-                          onPressed: () async {
-                            await authVM.signOut();
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => AuthPage()),
-                            );
-                          },
+                    ),
+                    Container(
+                      width: 300,
+                      margin: const EdgeInsets.all(10),
+                      child: ElevatedButton(
+                        child: const Text(
+                          'ユーザー作成profile一覧',
+                          style: TextStyle(color: Colors.black),
                         ),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => UserCreateListScreen(),
+                            ),
+                          );
+                        },
                       ),
-                       Container(
-                        width: 300,
-                        margin: EdgeInsets.all(10),
-                        child: ElevatedButton(
-                          child: const Text(
-                            'ユーザー作成profile一覧',
-                            style: TextStyle(color: Colors.black),
-                          ),
-                          onPressed: () async {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (context) => UserCreateListScreen()),
-                            );
-                          },
-                        ),
-                      ),
-
-                      const SizedBox(height: 20),
-                      // ログインユーザ情報を表示する例
-                      if (authVM.currentUser != null) ...[
-                        Text('ログイン中ユーザ:'),
-                        Text('UID: ${authVM.currentUser?.uid}'),
-                        Text('Name: ${authVM.currentUser?.name}'),
-                        Text('Email: ${authVM.currentUser?.email}'),
-                      ] else ...[
-                        const Text('未ログインです。'),
-                      ],
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              );
-            },
-          ),
-        ));
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 }

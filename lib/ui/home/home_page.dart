@@ -1,15 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Firebase Auth をインポート
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:provider/provider.dart';
 
 // 画面遷移のためのWidget
-
 import 'package:apusion/ui/home/HomeScreen.dart';
 import 'package:apusion/ui/create/view/create_page.dart';
 import 'package:apusion/ui/favorite/favorite_page.dart';
-import 'package:apusion/ui/home/ProfileCard.dart'; // プロフィールカードのインポート
-import 'package:apusion/ui/home/ProfileDetailScreen.dart'; // プロフィール詳細画面
+import 'package:apusion/ui/home/ProfileCard.dart';
+import 'package:apusion/ui/home/ProfileDetailScreen.dart';
 import 'package:apusion/ui/auth/view/auth_page.dart';
+import 'package:apusion/ui/user/user_page.dart';
+import 'package:apusion/ui/shop/ShopScreen.dart'; // ShopScreen をインポート
+
+// AuthViewModel をインポート
+import 'package:apusion/ui/auth/view_model/auth_view_model.dart';
 
 class MainScreen extends StatefulWidget {
   @override
@@ -18,31 +23,22 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
-  Map<String, dynamic>? _selectedProfile;
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchFavoriteProfile();  // お気に入りのキャラを取得
-  }
+  // 管理者用の画面
+  final List<Widget> _adminScreens = [
+    HomeScreen(),
+    CreateScreen(),
+    ShopScreen(),
+    FavoriteScreen(),
+    UserScreen(),
+  ];
 
-  void _fetchFavoriteProfile() async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser == null) return;
-
-    final snapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(currentUser.uid)
-        .collection('likedProfiles')
-        .limit(1) // 最初のお気に入りを取得
-        .get();
-
-    if (snapshot.docs.isNotEmpty) {
-      setState(() {
-        _selectedProfile = snapshot.docs.first.data();
-      });
-    }
-  }
+  // 一般ユーザー用の画面
+  final List<Widget> _userScreens = [
+    HomeScreen(),
+    ShopScreen(),
+    UserScreen(),
+  ];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -52,141 +48,44 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> _screens = [
-      HomeScreen(),
-      CreateScreen(),
-      HomeScreen(), // トークページを削除し、ホーム画面に遷移
-      FavoriteScreen(),
-      AuthPage(),
+    final authVM = context.watch<AuthViewModel>();
+    final bool isAdmin = authVM.isAdmin();
+
+    // ナビゲーションバーのアイテムを管理者用と一般ユーザー用に分ける
+    final adminNavItems = const [
+      BottomNavigationBarItem(icon: Icon(Icons.home), label: 'ホーム'),
+      BottomNavigationBarItem(icon: Icon(Icons.create), label: 'クリエイト'),
+      BottomNavigationBarItem(icon: Icon(Icons.store), label: 'ショップ'),
+      BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'お気に入り'),
+      BottomNavigationBarItem(icon: Icon(Icons.person), label: 'ユーザー'),
+    ];
+
+    final userNavItems = const [
+      BottomNavigationBarItem(icon: Icon(Icons.home), label: 'ホーム'),
+      BottomNavigationBarItem(icon: Icon(Icons.store), label: 'ショップ'),
+      BottomNavigationBarItem(icon: Icon(Icons.person), label: 'ユーザー'),
     ];
 
     return Scaffold(
       appBar: AppBar(
-        title: Text("ぷろふぃーるはぶ",
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
+        title: const Text(
+          "ぷろふぃーるはぶ",
+          style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [],
-        titleTextStyle: TextStyle(color: Colors.black),
       ),
-      body: _screens[_selectedIndex],
+      body: isAdmin
+          ? _adminScreens[_selectedIndex]
+          : _userScreens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'ホーム'),
-          BottomNavigationBarItem(icon: Icon(Icons.create), label: 'クリエイト'),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'ホーム'), // トークタブを削除してホームへ
-          BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'お気に入り'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'ユーザー'),
-        ],
+        items: isAdmin ? adminNavItems : userNavItems,
         currentIndex: _selectedIndex,
         selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
+        unselectedItemColor: Colors.black,
         onTap: _onItemTapped,
       ),
-    );
-  }
-}
-
-// Firestore を使った検索機能のカスタムデリゲート
-class ProfileSearchDelegate extends SearchDelegate {
-  @override
-  Widget buildLeading(BuildContext context) {
-    return IconButton(
-      icon: Icon(Icons.arrow_back),
-      onPressed: () {
-        close(context, null);
-      },
-    );
-  }
-
-  final String? userId = FirebaseAuth.instance.currentUser?.uid; // ログインユーザーの ID を取得
-
-  @override
-  List<Widget> buildActions(BuildContext context) {
-    return [
-      IconButton(
-        icon: Icon(Icons.clear),
-        onPressed: () {
-          query = '';
-        },
-      ),
-    ];
-  }
-
-  @override
-  Widget buildResults(BuildContext context) {
-    if (userId == null) {
-      return Center(child: Text("ログインしてください"));
-    }
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('profiles')
-          .where('userId', isEqualTo: userId) // ログインユーザーの ID でフィルタリング
-          .where('name', isGreaterThanOrEqualTo: query)
-          .where('name', isLessThanOrEqualTo: query + '\uf8ff')
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Center(child: CircularProgressIndicator());
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(child: Text("該当するプロフィールがありません"));
-        }
-
-        var profiles = snapshot.data!.docs;
-
-        return ListView.builder(
-          itemCount: profiles.length,
-          itemBuilder: (context, index) {
-            var profileData = profiles[index].data() as Map<String, dynamic>;
-            return ProfileCard(profile: profileData, documentId: profiles[index].id);
-          },
-        );
-      },
-    );
-  }
-
-  @override
-  Widget buildSuggestions(BuildContext context) {
-    if (userId == null) {
-      return Center(child: Text("ログインしてください"));
-    }
-
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('profiles')
-          .where('userId', isEqualTo: userId) // ログインユーザーの ID でフィルタリング
-          .where('name', isGreaterThanOrEqualTo: query)
-          .where('name', isLessThanOrEqualTo: query + '\uf8ff')
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(child: Text("検索候補がありません"));
-        }
-
-        var profiles = snapshot.data!.docs;
-
-        return ListView.builder(
-          itemCount: profiles.length,
-          itemBuilder: (context, index) {
-            var profileData = profiles[index].data() as Map<String, dynamic>;
-            return ListTile(
-              title: Text(profileData['name'] ?? '名前なし'),
-              onTap: () {
-                close(context, null);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ProfileDetailScreen(documentId: profiles[index].id),
-                  ),
-                );
-              },
-            );
-          },
-        );
-      },
     );
   }
 }

@@ -1,229 +1,134 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:apusion/ui/create/view_model/create_view_model.dart';
-import 'package:apusion/ui/auth/view/auth_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 
 class CreateScreen extends StatelessWidget {
-  CreateScreen({Key? key}) : super(key: key);
-  String? _fileName;
+  final String? profileId;
+  final Map<String, dynamic>? initialProfileData;
 
-  // ユーザーがログインしているかどうかを判定するメソッド
-  bool _isUserLoggedIn(BuildContext context) {
-    final user = FirebaseAuth.instance.currentUser;
-    print('user: $user');
-    if (user != null) {
-      return true;
-    } else {
-      return false;
-    }
-  }
-
-  Future<void> _pickImage(CreateScreenViewModel viewModel) async {
-    // 画像をfirebase storageにアップロードする処理
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      allowMultiple: false,
-    );
-    if (result == null) {
-      return;
-    }
-    final file = result.files.single;
-
-    _fileName = file.name;
-    final storageRef =
-        FirebaseStorage.instance.ref().child('uploads/${file.name}');
-    final metadata = SettableMetadata(
-      contentType: 'image/png',
-    );
-    final uploadTask = storageRef.putData(file.bytes!, metadata);
-
-    await uploadTask.whenComplete(() async {
-      final downloadUrl = await storageRef.getDownloadURL();
-      viewModel.imageUrlController.text = downloadUrl;
-      print('Download URL: $downloadUrl');
-    });
-    // print('file: $file');
-  }
+  CreateScreen({Key? key, this.profileId, this.initialProfileData}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final isLoggedIn = _isUserLoggedIn(context);
-    print('isLoggedIn: $isLoggedIn');
-    // ログインしていない場合、AuthPage()への遷移ボタンのみを表示
-    if (!isLoggedIn) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text("キャラ作成"),
-        ),
-        body: Center(
-          child: ElevatedButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const AuthPage()),
-              );
-            },
-            child: const Text("ログインして作成する"),
-          ),
-        ),
-      );
-    }
+    final user = FirebaseAuth.instance.currentUser;
+    final isAdmin = user?.uid == '0jbF0jcGAaeWyOiZ75LzFbmfQK22';
 
     return ChangeNotifierProvider(
-      create: (_) => CreateScreenViewModel(),
+      create: (_) {
+        final viewModel = CreateScreenViewModel();
+        if (initialProfileData != null) {
+          viewModel.nameController.text = initialProfileData!['name'] ?? '';
+          viewModel.descriptionController.text = initialProfileData!['description'] ?? '';
+          viewModel.priceController.text = initialProfileData!['price']?.toString() ?? '';
+          viewModel.selectedCategory = initialProfileData!['category'] ?? '';
+          viewModel.imageUrls = List<String>.from(initialProfileData!['imageUrls'] ?? []);
+          viewModel.storeController.text = initialProfileData!['store'] ?? '本店';
+          viewModel.visitDateController.text = initialProfileData!['visitDate'] ?? '';
+        }
+        return viewModel;
+      },
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text("キャラ作成"),
-        ),
+        appBar: AppBar(title: Text(profileId != null ? "商品編集" : "商品作成")),
         body: Consumer<CreateScreenViewModel>(
           builder: (context, viewModel, child) {
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   TextField(
                     controller: viewModel.nameController,
-                    decoration: const InputDecoration(
-                      labelText: "名前",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: viewModel.tagController,
-                    decoration: const InputDecoration(
-                      labelText: "タグ (半角スペース区切り)",
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: InputDecoration(labelText: "商品名"),
                   ),
                   const SizedBox(height: 20),
                   TextField(
                     controller: viewModel.descriptionController,
-                    decoration: const InputDecoration(
-                      labelText: "説明",
-                      border: OutlineInputBorder(),
-                    ),
+                    decoration: InputDecoration(labelText: "商品説明"),
                   ),
                   const SizedBox(height: 20),
-                  TextField(
-                    controller: viewModel.imageUrlController,
-                    decoration: const InputDecoration(
-                      labelText: "画像URL",
-                      border: OutlineInputBorder(),
+                  if (isAdmin)
+                    TextField(
+                      controller: viewModel.priceController,
+                      keyboardType: TextInputType.number,
+                      decoration: InputDecoration(labelText: "価格"),
                     ),
+                  const SizedBox(height: 20),
+                  DropdownButtonFormField<String>(
+                    value: viewModel.selectedCategory,
+                    items: ['電子レンジ', '冷蔵庫', '洗濯機'].map((category) {
+                      return DropdownMenuItem(value: category, child: Text(category));
+                    }).toList(),
+                    onChanged: (value) => viewModel.selectedCategory = value!,
+                    decoration: InputDecoration(labelText: "カテゴリ"),
+                  ),
+                  const SizedBox(height: 20),
+                  Wrap(
+                    children: viewModel.imageUrls.map((imageUrl) {
+                      return Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: Image.network(imageUrl, width: 80, height: 80),
+                      );
+                    }).toList(),
                   ),
                   ElevatedButton(
-                    onPressed: () => _pickImage(viewModel),
-                    child: Text('ファイルを選択'),
-                  ),
-                  SizedBox(height: 20),
-                  TextField(
-                    controller: viewModel.genderController,
-                    decoration: const InputDecoration(
-                      labelText: "性別",
-                      border: OutlineInputBorder(),
-                    ),
+                    onPressed: () => _pickImages(viewModel),
+                    child: const Text('画像を選択（最大5枚）'),
                   ),
                   const SizedBox(height: 20),
-                  TextField(
-                    controller: viewModel.personalityController,
-                    decoration: const InputDecoration(
-                      labelText: "性格",
-                      border: OutlineInputBorder(),
+
+                  // 一般ユーザーと運営で異なるフィールド
+                  if (isAdmin)
+                    DropdownButtonFormField<String>(
+                      value: viewModel.storeController.text.isNotEmpty
+                          ? viewModel.storeController.text
+                          : '本店',
+                      items: ['本店'].map((store) {
+                        return DropdownMenuItem(value: store, child: Text(store));
+                      }).toList(),
+                      onChanged: (value) {
+                        viewModel.storeController.text = value!;
+                      },
+                      decoration: InputDecoration(labelText: "取り扱い店舗"),
+                    )
+                  else
+                    Column(
+                      children: [
+                        TextField(
+                          controller: viewModel.visitDateController,
+                          decoration: InputDecoration(labelText: "来店予定日"),
+                        ),
+                        const SizedBox(height: 20),
+                        DropdownButtonFormField<String>(
+                          value: viewModel.storeController.text.isNotEmpty
+                              ? viewModel.storeController.text
+                              : '本店',
+                          items: ['本店'].map((store) {
+                            return DropdownMenuItem(value: store, child: Text(store));
+                          }).toList(),
+                          onChanged: (value) {
+                            viewModel.storeController.text = value!;
+                          },
+                          decoration: InputDecoration(labelText: "来店店舗"),
+                        ),
+                      ],
+                    ),
+                  const SizedBox(height: 20),
+
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (profileId == null) {
+                          viewModel.submitProfile(context, isAdmin);
+                        } else {
+                          viewModel.updateProfile(context, profileId!, isAdmin);
+                        }
+                      },
+                      child: const Text("決定！"),
                     ),
                   ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: viewModel.heightController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "身長",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: viewModel.bloodTypeController,
-                    decoration: const InputDecoration(
-                      labelText: "血液型",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: viewModel.ageController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: "年齢",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: viewModel.hobbiesController,
-                    decoration: const InputDecoration(
-                      labelText: "趣味 (半角スペース区切り)",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: viewModel.familyStructureController,
-                    decoration: const InputDecoration(
-                      labelText: "家族構成",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: viewModel.birthDateController,
-                    decoration: const InputDecoration(
-                      labelText: "誕生日 (YYYY-MM-DD)",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: viewModel.otherDetailsController,
-                    decoration: const InputDecoration(
-                      labelText: "その他(話し方など)",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: viewModel.likesDislikesController,
-                    decoration: const InputDecoration(
-                      labelText: "好き/嫌い",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: viewModel.concernsController,
-                    decoration: const InputDecoration(
-                      labelText: "悩み",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: viewModel.remarksController,
-                    decoration: const InputDecoration(
-                      labelText: "備考",
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
-                  ElevatedButton(
-                    onPressed: () {
-                      viewModel.submitProfile(context); // contextを渡す
-                    },
-                    child: const Text("決定！"),
-                  )
                 ],
               ),
             );
@@ -231,5 +136,22 @@ class CreateScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _pickImages(CreateScreenViewModel viewModel) async {
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: true,
+    );
+    if (result == null) return;
+
+    for (var file in result.files.take(5)) {
+      final storageRef = FirebaseStorage.instance.ref().child('uploads/${file.name}');
+      final uploadTask = storageRef.putData(file.bytes!);
+      await uploadTask.whenComplete(() async {
+        final downloadUrl = await storageRef.getDownloadURL();
+        viewModel.addImageUrl(downloadUrl);
+      });
+    }
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart'; // FirebaseAuthのインポート
-
 import 'ProfileDetailScreen.dart';
 
 class ProfileCard extends StatefulWidget {
@@ -23,12 +22,10 @@ class _ProfileCardState extends State<ProfileCard> {
     _checkFavoriteStatus();
   }
 
-  // ユーザーがこのプロフィールをお気に入りにしているか確認する
   void _checkFavoriteStatus() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) return;
 
-    // Firestoreの`likedProfiles`コレクションにプロフィールがあるか確認
     DocumentSnapshot likedProfileDoc = await FirebaseFirestore.instance
         .collection('users')
         .doc(currentUser.uid)
@@ -41,35 +38,35 @@ class _ProfileCardState extends State<ProfileCard> {
     });
   }
 
-  // お気に入りを切り替える
   void _toggleFavorite(BuildContext context) async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("ログインしてください")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("ログインしてください")),
+      );
       return;
     }
 
     if (isFavorite) {
-      // お気に入り解除
       await FirebaseFirestore.instance
           .collection('users')
           .doc(currentUser.uid)
           .collection('likedProfiles')
           .doc(widget.documentId)
           .delete();
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("お気に入りを解除しました")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("お気に入りを解除しました")),
+      );
     } else {
-      // お気に入り追加
       await FirebaseFirestore.instance
           .collection('users')
           .doc(currentUser.uid)
           .collection('likedProfiles')
           .doc(widget.documentId)
           .set({'isFavorite': true});
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text("お気に入りに追加しました")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("お気に入りに追加しました")),
+      );
     }
 
     setState(() {
@@ -84,28 +81,34 @@ class _ProfileCardState extends State<ProfileCard> {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) =>
-                ProfileDetailScreen(documentId: widget.documentId),
+            builder: (context) => ProfileDetailScreen(documentId: widget.documentId),
           ),
         );
       },
       child: Card(
         margin: EdgeInsets.symmetric(vertical: 8, horizontal: 16),
         child: ListTile(
-          leading: CircleAvatar(
-            backgroundImage: widget.profile['imageUrl'] != null
-                ? NetworkImage(widget.profile['imageUrl'])
-                : null,
-            child:
-                widget.profile['imageUrl'] == null ? Icon(Icons.person) : null,
+          leading: ClipRRect(
+            borderRadius: BorderRadius.circular(8), // 角を丸める
+            child: widget.profile['imageUrls'] != null && widget.profile['imageUrls'].isNotEmpty
+                ? Image.network(
+                    widget.profile['imageUrls'][0], // 1枚目を表示
+                    width: 80,
+                    height: 80,
+                    fit: BoxFit.cover,
+                  )
+                : Container(
+                    width: 80,
+                    height: 80,
+                    color: Colors.grey[300],
+                    child: Icon(Icons.image, size: 40, color: Colors.grey[600]),
+                  ),
           ),
           title: Text(widget.profile['name'] ?? '名前なし'),
           subtitle: Row(
             children: [
-              if (widget.profile['tag'] != null)
-                ...widget.profile['tag']
-                    .map<Widget>((tag) => _buildTag(tag))
-                    .toList(),
+              if (widget.profile['category'] != null)
+                _buildTag(widget.profile['category']),
             ],
           ),
           trailing: IconButton(
@@ -120,7 +123,7 @@ class _ProfileCardState extends State<ProfileCard> {
     );
   }
 
-  Widget _buildTag(tag) {
+  Widget _buildTag(String tag) {
     return Container(
       margin: EdgeInsets.only(right: 4),
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
