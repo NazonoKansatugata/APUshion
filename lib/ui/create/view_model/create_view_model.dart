@@ -93,7 +93,7 @@ class CreateScreenViewModel extends ChangeNotifier {
     final visitData = {
       'userId': userId,
       'userName': userName,
-      'productId': productId,
+      'productId': productId, // 商品IDを格納
       'product': nameController.text,
       'store': storeController.text,
       'visitDate': visitDateController.text,
