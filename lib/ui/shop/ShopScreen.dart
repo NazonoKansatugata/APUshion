@@ -3,7 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import 'package:apusion/ui/auth/view_model/auth_view_model.dart';
-import 'package:apusion/ui/shop/shop_model.dart';
+import 'package:apusion/ui/create/view/create_page.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({Key? key}) : super(key: key);
@@ -15,15 +15,8 @@ class ShopScreen extends StatefulWidget {
 class _ShopScreenState extends State<ShopScreen> {
   final TextEditingController _visitDateController = TextEditingController();
   final TextEditingController _productController = TextEditingController();
-  String _selectedStore = '未選択';
+  String _visitType = 'listing'; // デフォルトは "出品"
   final _formKey = GlobalKey<FormState>();
-
-  final List<String> _stores = [
-    '未選択',
-    '本店',
-    '支店A',
-    '支店B',
-  ];
 
   @override
   void dispose() {
@@ -37,114 +30,84 @@ class _ShopScreenState extends State<ShopScreen> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    if (_formKey.currentState!.validate() && _selectedStore != '未選択') {
-      ShopVisit visit = ShopVisit(
-        id: '',
-        userId: user.uid,
-        userName: user.displayName ?? '匿名ユーザー',
-        product: _productController.text,
-        visitDate: _visitDateController.text,
-        store: _selectedStore,
-        visitType: 'listing',
-        createdAt: Timestamp.now(),
-      );
+    await FirebaseFirestore.instance.collection('shopVisits').add({
+      'userId': user.uid,
+      'userName': user.displayName ?? '匿名ユーザー',
+      'visitDate': _visitDateController.text,
+      'product': _productController.text,
+      'visitType': _visitType, // 出品のみ
+      'createdAt': Timestamp.now(),
+    });
 
-      await FirebaseFirestore.instance
-          .collection('shopVisits')
-          .add(visit.toMap());
+    // フィールドをクリア
+    _visitDateController.clear();
+    _productController.clear();
 
-      _visitDateController.clear();
-      _productController.clear();
-      setState(() {
-        _selectedStore = '未選択';
-      });
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('来店予定を追加しました')),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('すべての項目を入力してください')),
-      );
-    }
-  }
-
-  /// 来店予定の削除
-  Future<void> _deleteVisit(String documentId) async {
-    await FirebaseFirestore.instance
-        .collection('shopVisits')
-        .doc(documentId)
-        .delete();
-
+    // スナックバーで通知
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('来店予定を削除しました')),
+      const SnackBar(content: Text('来店予定を追加しました')),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final authVM = context.watch<AuthViewModel>();
+    final bool isAdmin = authVM.isAdmin();
+    final user = FirebaseAuth.instance.currentUser;
+
+    if (user == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text("ショップ")),
+        body: const Center(child: Text("ログインしてください")),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(title: const Text("ショップ")),
       body: Column(
         children: [
-          Form(
-            key: _formKey,
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: _productController,
-                    decoration: const InputDecoration(
-                      labelText: '商品名',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '商品名を入力してください';
-                      }
-                      return null;
-                    },
+          // デバッグ情報の表示
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                Text("ユーザーID: ${user.uid}"),
+                Text("管理者: ${isAdmin ? 'はい' : 'いいえ'}"),
+              ],
+            ),
+          ),
+
+          // 来店予定の入力フォーム
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              children: [
+                TextField(
+                  controller: _productController,
+                  decoration: const InputDecoration(
+                    labelText: '商品名',
+                    border: OutlineInputBorder(),
                   ),
-                  const SizedBox(height: 8),
-                  TextFormField(
-                    controller: _visitDateController,
-                    decoration: const InputDecoration(
-                      labelText: '来店予定日 (例: 2024-01-01)',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return '来店予定日を入力してください';
-                      }
-                      return null;
-                    },
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _visitDateController,
+                  decoration: const InputDecoration(
+                    labelText: '来店予定日 (例: 2024-01-01)',
+                    border: OutlineInputBorder(),
                   ),
-                  const SizedBox(height: 8),
-                  DropdownButton<String>(
-                    value: _selectedStore,
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedStore = newValue!;
-                      });
-                    },
-                    items: _stores.map<DropdownMenuItem<String>>((String value) {
-                      return DropdownMenuItem<String>(
-                        value: value,
-                        child: Text(value),
-                      );
-                    }).toList(),
-                  ),
-                  const SizedBox(height: 8),
-                  ElevatedButton(
-                    onPressed: _addVisit,
-                    child: const Text('来店予定を追加'),
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 8),
+                ElevatedButton(
+                  onPressed: _addVisit,
+                  child: const Text('来店予定を追加'),
+                ),
+              ],
             ),
           ),
           const Divider(),
+
+          // 来店予定リスト
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -159,21 +122,71 @@ class _ShopScreenState extends State<ShopScreen> {
                   return const Center(child: Text("来店予定はありません"));
                 }
 
-                var visits = snapshot.data!.docs
-                    .map((doc) => ShopVisit.fromDocument(doc))
-                    .toList();
+                var visits = snapshot.data!.docs;
+
+                // デバッグ用: 取得したデータをすべて表示
+                for (var visit in visits) {
+                  debugPrint('取得データ: ${visit.data()}');
+                }
 
                 return ListView.builder(
                   itemCount: visits.length,
                   itemBuilder: (context, index) {
-                    var visit = visits[index];
-                    return ListTile(
-                      title: Text(visit.product),
-                      subtitle: Text("来店予定日: ${visit.visitDate}"),
+                    var visit = visits[index].data() as Map<String, dynamic>;
+
+                    return Card(
+                      margin: const EdgeInsets.all(8),
+                      child: ListTile(
+                        leading: Icon(
+                          visit['visitType'] == 'listing'
+                              ? Icons.store
+                              : Icons.error,
+                          color: visit['visitType'] == 'listing'
+                              ? Colors.orange
+                              : Colors.red,
+                        ),
+                        title: Text(visit['product'] ?? '商品名なし'),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("来店予定日: ${visit['visitDate']}"),
+                            Text("ユーザー: ${visit['userName']}"),
+                          ],
+                        ),
+                        trailing: Text(
+                          '出品',
+                          style: const TextStyle(
+                            color: Colors.orange,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     );
                   },
                 );
               },
+            ),
+          ),
+
+          // 出品するボタン
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CreateScreen(profileId: null),
+                  ),
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('出品する'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                textStyle: const TextStyle(fontSize: 18),
+              ),
             ),
           ),
         ],
