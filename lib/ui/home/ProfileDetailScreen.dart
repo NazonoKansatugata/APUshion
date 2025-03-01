@@ -192,10 +192,11 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     }
   }
 
-  @override
+ @override
 Widget build(BuildContext context) {
   final authVM = context.watch<AuthViewModel>();
   final bool isAdmin = authVM.isAdmin();
+  final bool isLoggedIn = currentUserId != null;
 
   return Scaffold(
     backgroundColor: Colors.purple.shade50,
@@ -208,56 +209,153 @@ Widget build(BuildContext context) {
       elevation: 2,
       iconTheme: IconThemeData(color: Colors.black),
     ),
-    body: SingleChildScrollView(
-      child: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              profileData?['name'] ?? '商品名なし',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-            ),
-            SizedBox(height: 16),
-            Text(
-              profileData?['description'] ?? '商品説明なし',
-              style: TextStyle(fontSize: 16, color: Colors.grey[700]),
-            ),
-            SizedBox(height: 16),
-            if (isAdmin) 
-              ElevatedButton(
-                onPressed: _editItem,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                ),
-                child: Text("編集", style: TextStyle(fontSize: 16, color: Colors.white)),
-              )
-            else 
-              isPurchased
-                ? ElevatedButton(
-                    onPressed: _cancelPurchase,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+    body: isLoggedIn
+        ? SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // 商品画像（カードの外）
+                if (profileData?['imageUrls'] != null && profileData!['imageUrls'].isNotEmpty)
+                  SizedBox(
+                    height: 250,
+                    child: PageView(
+                      children: List<Widget>.from(
+                        profileData!['imageUrls'].map<Widget>((url) => Image.network(
+                              url,
+                              fit: BoxFit.cover,
+                              width: double.infinity,
+                            )),
+                      ),
                     ),
-                    child: Text("購入取り消し", style: TextStyle(fontSize: 16, color: Colors.white)),
                   )
-                : ElevatedButton(
-                    onPressed: _purchaseItem,
+                else
+                  // 画像がない場合のプレースホルダー
+                  Container(
+                    height: 250,
+                    color: Colors.grey[300],
+                    child: Center(
+                      child: Text(
+                        '画像はありません',
+                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                      ),
+                    ),
+                  ),
+
+                // 情報カード
+                Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Card(
+                    elevation: 4,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 商品名
+                          Text(
+                            profileData?['name'] ?? '商品名なし',
+                            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 8),
+
+                          // カテゴリー（タグ風）
+                          if (profileData?['category'] != null)
+                            Chip(
+                              label: Text(profileData!['category']),
+                              backgroundColor: Colors.blue.shade100,
+                            ),
+                          SizedBox(height: 8),
+
+                          // 値段
+                          Text(
+                            '価格: ¥${profileData?['price']?.toString() ?? '不明'}',
+                            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                          ),
+                          SizedBox(height: 16),
+
+                          // 商品説明
+                          Text(
+                            profileData?['description'] ?? '商品説明なし',
+                            style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                          ),
+                          SizedBox(height: 16),
+
+                          // 取り扱い店舗
+                          Text(
+                            '取り扱い店舗: ${profileData?['store'] ?? '未設定'}',
+                            style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                          ),
+                          SizedBox(height: 8),
+
+                          // 出品者
+                          Text(
+                            '出品者: ${profileData?['userName'] ?? '匿名'}',
+                            style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                          ),
+                          SizedBox(height: 8),
+
+                          // 商品ID
+                          Text(
+                            '商品ID: ${widget.documentId}',
+                            style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                          ),
+                          SizedBox(height: 8),
+
+                          // 出品日時
+                          Text(
+                            '出品日時: ${profileData?['updatedAt']?.toDate().toString() ?? '不明'}',
+                            style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+
+                // ボタン（カードの外）
+                if (isAdmin) 
+                  ElevatedButton(
+                    onPressed: _editItem,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor: Colors.blue,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                     ),
-                    child: Text("購入する", style: TextStyle(fontSize: 16, color: Colors.white)),
-                  ),
-          ],
-        ),
-      ),
-    ),
+                    child: Text("編集", style: TextStyle(fontSize: 16, color: Colors.white)),
+                  )
+                else 
+                  isPurchased
+                    ? ElevatedButton(
+                        onPressed: _cancelPurchase,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                        ),
+                        child: Text("購入取り消し", style: TextStyle(fontSize: 16, color: Colors.white)),
+                      )
+                    : ElevatedButton(
+                        onPressed: _purchaseItem,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                        ),
+                        child: Text("購入する", style: TextStyle(fontSize: 16, color: Colors.white)),
+                      ),
+                SizedBox(height: 20),
+              ],
+            ),
+          )
+        : Center(
+            child: Text(
+              'ログインしてください',
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.grey[700]),
+            ),
+          ),
   );
 }
 
