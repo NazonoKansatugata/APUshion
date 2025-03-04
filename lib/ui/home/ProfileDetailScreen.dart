@@ -197,6 +197,7 @@ Widget build(BuildContext context) {
   final authVM = context.watch<AuthViewModel>();
   final bool isAdmin = authVM.isAdmin();
   final bool isLoggedIn = currentUserId != null;
+  final String? status = profileData?['status']; // 商品のステータス取得
 
   return Scaffold(
     backgroundColor: Colors.purple.shade50,
@@ -214,7 +215,7 @@ Widget build(BuildContext context) {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // 商品画像（カードの外）
+                // 商品画像
                 if (profileData?['imageUrls'] != null && profileData!['imageUrls'].isNotEmpty)
                   SizedBox(
                     height: 250,
@@ -316,7 +317,7 @@ Widget build(BuildContext context) {
                 ),
 
                 // ボタン（カードの外）
-                if (isAdmin) 
+                if (isAdmin || status == "下書き") 
                   ElevatedButton(
                     onPressed: _editItem,
                     style: ElevatedButton.styleFrom(
@@ -326,26 +327,26 @@ Widget build(BuildContext context) {
                     ),
                     child: Text("編集", style: TextStyle(fontSize: 16, color: Colors.white)),
                   )
-                else 
-                  isPurchased
-                    ? ElevatedButton(
-                        onPressed: _cancelPurchase,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.red,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                        ),
-                        child: Text("購入取り消し", style: TextStyle(fontSize: 16, color: Colors.white)),
-                      )
-                    : ElevatedButton(
-                        onPressed: _purchaseItem,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                        ),
-                        child: Text("購入する", style: TextStyle(fontSize: 16, color: Colors.white)),
-                      ),
+                else if (isPurchased)
+                  ElevatedButton(
+                    onPressed: _cancelPurchase,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    ),
+                    child: Text("購入取り消し", style: TextStyle(fontSize: 16, color: Colors.white)),
+                  )
+                else
+                  ElevatedButton(
+                    onPressed: _purchaseItem,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                    ),
+                    child: Text("購入する", style: TextStyle(fontSize: 16, color: Colors.white)),
+                  ),
                 SizedBox(height: 20),
               ],
             ),
@@ -358,5 +359,6 @@ Widget build(BuildContext context) {
           ),
   );
 }
+
 
 }

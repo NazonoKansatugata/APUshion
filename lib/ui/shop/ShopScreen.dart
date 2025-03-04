@@ -108,10 +108,15 @@ class _ShopScreenState extends State<ShopScreen> {
           // 来店予定リスト
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream: FirebaseFirestore.instance
-                  .collection('shopVisits')
-                  .orderBy('createdAt', descending: true)
-                  .snapshots(),
+              stream: isAdmin
+                  ? FirebaseFirestore.instance
+                      .collection('shopVisits')
+                      .orderBy('createdAt', descending: true)
+                      .snapshots()
+                  : FirebaseFirestore.instance
+                      .collection('shopVisits')
+                      .where('userId', isEqualTo: user.uid) // 一般ユーザーは自分の予定のみ
+                      .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -161,7 +166,7 @@ class _ShopScreenState extends State<ShopScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text("来店予定日: ${visit['visitDate']}"),
-                            Text("ユーザー: ${visit['userName']}"),
+                            if (isAdmin) Text("ユーザー: ${visit['userName']}"),
                           ],
                         ),
                         trailing: const Icon(Icons.arrow_forward),
