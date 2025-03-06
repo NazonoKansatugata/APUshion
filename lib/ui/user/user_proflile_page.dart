@@ -120,7 +120,7 @@ class UserProfileScreen extends StatelessWidget {
                                 builder: (context) => UserCreateListScreen()),
                           );
                         },
-                        child: const Text('作成したぷろふぃーる一覧'),
+                        child: const Text('出品した商品一覧'),
                       ),
                       const SizedBox(height: 12),
                       ElevatedButton(
@@ -135,7 +135,7 @@ class UserProfileScreen extends StatelessWidget {
                                 builder: (context) => FavoriteScreen()),
                           );
                         },
-                        child: const Text('いいねしたぷろふぃーる一覧'),
+                        child: const Text('いいねした商品一覧'),
                       ),
                       const SizedBox(height: 12),
                       // 画像生成に関するボタンを削除

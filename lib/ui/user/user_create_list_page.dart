@@ -9,7 +9,7 @@ class UserCreateListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text("つくったぷろふぃーる一覧", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        title: Text("出品した商品一覧", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
         actions: [

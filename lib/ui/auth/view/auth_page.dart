@@ -123,7 +123,7 @@ class AuthPage extends StatelessWidget {
                       margin: const EdgeInsets.all(10),
                       child: ElevatedButton(
                         child: const Text(
-                          'ユーザー作成profile一覧',
+                          '出品した商品一覧',
                           style: TextStyle(color: Colors.black),
                         ),
                         onPressed: () {

@@ -73,7 +73,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                               final docs = snapshot.data?.docs ?? [];
                               final playerLevel = docs.length;
                               return Text(
-                                'キャラ愛Lv.$playerLevel',
+                                'ユーザーLv.$playerLevel',
                                 style: const TextStyle(fontSize: 16),
                               );
                             },
@@ -109,7 +109,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                               builder: (context) => UserProfileEditPage()),
                         );
                       },
-                      child: const Text('お気に入り画面へ'),
+                      child: const Text('プロフィール編集'),
                     ),
                   ],
                 ),
