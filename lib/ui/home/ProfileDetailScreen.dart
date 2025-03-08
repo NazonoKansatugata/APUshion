@@ -61,80 +61,123 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
 
   /// 購入処理 & 来店予定の追加
   Future<void> _purchaseItem() async {
-    if (currentUserId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("ログインしてください")),
-      );
-      return;
-    }
-
-    final TextEditingController visitDateController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('来店予定日を入力'),
-          content: TextField(
-            controller: visitDateController,
-            decoration: const InputDecoration(
-              hintText: '例: 2024-01-01',
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('キャンセル'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                try {
-                  // Firestore に購入情報を保存
-                  await FirebaseFirestore.instance
-                      .collection('purchases')
-                      .doc(widget.documentId)
-                      .set({
-                    'buyerId': currentUserId,
-                    'purchaseDate': DateTime.now(),
-                  });
-
-                  // Firestore に来店予定を保存
-                  await FirebaseFirestore.instance.collection('shopVisits').add({
-                    'userId': currentUserId,
-                    'userName': FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー',
-                    'visitDate': visitDateController.text,
-                    'product': profileData?['name'] ?? '商品名なし',
-                    'productId': widget.documentId,
-                    'visitType': 'purchase',
-                    'createdAt': Timestamp.now(),
-                  });
-
-                  // 購入後は status を購入済みに変更
-                  await FirebaseFirestore.instance
-                      .collection('profiles')
-                      .doc(widget.documentId)
-                      .update({'status': '購入済み'});
-
-                  setState(() {
-                    isPurchased = true;
-                  });
-
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("購入が完了し、来店予定を追加しました")),
-                  );
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text("購入に失敗しました: $e")),
-                  );
-                }
-              },
-              child: const Text('購入'),
-            ),
-          ],
-        );
-      },
+  if (currentUserId == null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("ログインしてください")),
     );
+    return;
   }
+
+  final TextEditingController visitDateController = TextEditingController();
+
+  // 日付選択のダイアログを表示
+  DateTime? pickedDate;
+  showDialog(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: const Text('来店予定日を入力'),
+        content: Form(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // 来店予定日を選択するTextFormField
+              TextFormField(
+                controller: visitDateController,
+                decoration: const InputDecoration(
+                  hintText: '例: 2024-01-01',
+                ),
+                readOnly: true, // ユーザーが直接書き込めないようにする
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '来店予定日を選択してください';
+                  }
+                  return null; // 正常な場合はnullを返す
+                },
+              ),
+              SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () async {
+                  pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(Duration(days: 365)),
+                  );
+
+                  if (pickedDate != null) {
+                    visitDateController.text = "${pickedDate?.toLocal()}".split(' ')[0];
+                  } else {
+                    print("日付が選択されませんでした");
+                  }
+                },
+                child: Text('カレンダーで選択'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (visitDateController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('来店予定日を選択してください')),
+                );
+                return;
+              }
+
+              try {
+                // Firestore に購入情報を保存
+                await FirebaseFirestore.instance
+                    .collection('purchases')
+                    .doc(widget.documentId)
+                    .set({
+                  'buyerId': currentUserId,
+                  'purchaseDate': DateTime.now(),
+                });
+
+                // Firestore に来店予定を保存
+                await FirebaseFirestore.instance.collection('shopVisits').add({
+                  'userId': currentUserId,
+                  'userName': FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー',
+                  'visitDate': visitDateController.text,
+                  'product': profileData?['name'] ?? '商品名なし',
+                  'productId': widget.documentId,
+                  'visitType': 'purchase',
+                  'createdAt': Timestamp.now(),
+                });
+
+                // 購入後は status を購入済みに変更
+                await FirebaseFirestore.instance
+                    .collection('profiles')
+                    .doc(widget.documentId)
+                    .update({'status': '購入済み'});
+
+                setState(() {
+                  isPurchased = true;
+                });
+
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("購入が完了し、来店予定を追加しました")),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("購入に失敗しました: $e")),
+                );
+              }
+            },
+            child: const Text('購入'),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   /// 購入取り消し処理
   Future<void> _cancelPurchase() async {
