@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:apusion/ui/create/view/create_page.dart';
 import 'package:provider/provider.dart';
 import 'package:apusion/ui/auth/view_model/auth_view_model.dart';
+import 'agreement_text.dart';  // 同意書の内容をインポート
 
 class ProfileDetailScreen extends StatefulWidget {
   final String documentId;
@@ -74,99 +75,143 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     );
   }
 
-  Widget _purchaseDialog() {
-    final TextEditingController visitDateController = TextEditingController();
-    DateTime? pickedDate;
+  // 購入処理ダイアログ
+// 購入処理ダイアログ
+Widget _purchaseDialog() {
+  final TextEditingController visitDateController = TextEditingController();
+  DateTime? pickedDate;
+  bool isAgreementChecked = false; // チェックボックスの状態を管理
 
-    return AlertDialog(
-      title: const Text('来店予定日を入力'),
-      content: Form(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: visitDateController,
-              decoration: const InputDecoration(
-                hintText: '例: 2024-01-01',
+  return StatefulBuilder(
+    builder: (context, setState) {
+      return AlertDialog(
+        title: const Text('来店予定日を入力'),
+        content: Form(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: visitDateController,
+                decoration: const InputDecoration(
+                  hintText: '例: 2024-01-01',
+                ),
+                readOnly: true,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return '来店予定日を選択してください';
+                  }
+                  return null;
+                },
               ),
-              readOnly: true,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return '来店予定日を選択してください';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: () async {
-                pickedDate = await showDatePicker(
-                  context: context,
-                  initialDate: DateTime.now(),
-                  firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(Duration(days: 365)),
+              SizedBox(height: 10),
+              ElevatedButton(
+                onPressed: () async {
+                  pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(Duration(days: 365)),
+                  );
+
+                  if (pickedDate != null) {
+                    visitDateController.text = "${pickedDate?.toLocal()}".split(' ')[0];
+                  }
+                },
+                child: Text('カレンダーで選択'),
+              ),
+              // 契約書表示ボタン
+              ElevatedButton(
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => _agreementDialog(),
+                  );
+                },
+                child: Text('契約書を表示'),
+              ),
+              SizedBox(height: 10),
+              // チェックボックスを追加
+              Row(
+                children: [
+                  Checkbox(
+                    value: isAgreementChecked,
+                    onChanged: (bool? newValue) {
+                      setState(() {
+                        isAgreementChecked = newValue ?? false;
+                      });
+                    },
+                  ),
+                  Expanded(
+                    child: Text(
+                      '契約書に同意する',
+                      style: TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('キャンセル'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              if (visitDateController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('来店予定日を選択してください')),
                 );
+                return;
+              }
 
-                if (pickedDate != null) {
-                  visitDateController.text = "${pickedDate?.toLocal()}".split(' ')[0];
-                }
-              },
-              child: Text('カレンダーで選択'),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('キャンセル'),
-        ),
-        ElevatedButton(
-          onPressed: () async {
-            if (visitDateController.text.isEmpty) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('来店予定日を選択してください')),
-              );
-              return;
-            }
+              if (!isAgreementChecked) { // チェックボックスが選択されていない場合
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('契約書に同意してください')),
+                );
+                return;
+              }
 
-            try {
-              await FirebaseFirestore.instance.collection('purchases').doc(widget.documentId).set({
-                'buyerId': currentUserId,
-                'purchaseDate': DateTime.now(),
-              });
+              try {
+                await FirebaseFirestore.instance.collection('purchases').doc(widget.documentId).set({
+                  'buyerId': currentUserId,
+                  'purchaseDate': DateTime.now(),
+                });
 
-              await FirebaseFirestore.instance.collection('shopVisits').add({
-                'userId': currentUserId,
-                'userName': FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー',
-                'visitDate': visitDateController.text,
-                'product': profileData?['name'] ?? '商品名なし',
-                'productId': widget.documentId,
-                'visitType': 'purchase',
-                'createdAt': Timestamp.now(),
-              });
+                await FirebaseFirestore.instance.collection('shopVisits').add({
+                  'userId': currentUserId,
+                  'userName': FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー',
+                  'visitDate': visitDateController.text,
+                  'product': profileData?['name'] ?? '商品名なし',
+                  'productId': widget.documentId,
+                  'visitType': 'purchase',
+                  'createdAt': Timestamp.now(),
+                });
 
-              await FirebaseFirestore.instance.collection('profiles').doc(widget.documentId).update({'status': '購入済み'});
+                await FirebaseFirestore.instance.collection('profiles').doc(widget.documentId).update({'status': '購入済み'});
 
-              setState(() {
-                isPurchased = true;
-              });
+                setState(() {
+                  isPurchased = true;
+                });
 
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("購入が完了し、来店予定を追加しました")),
-              );
-            } catch (e) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("購入に失敗しました: $e")),
-              );
-            }
-          },
-          child: const Text('購入'),
-        ),
-      ],
-    );
-  }
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("購入が完了し、来店予定を追加しました")),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("購入に失敗しました: $e")),
+                );
+              }
+            },
+            child: const Text('購入'),
+          ),
+        ],
+      );
+    },
+  );
+}
 
   // 購入取り消し処理
   Future<void> _cancelPurchase() async {
@@ -299,6 +344,22 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  // 契約書ダイアログ
+  Widget _agreementDialog() {
+    return AlertDialog(
+      title: Text('売買契約書'),
+      content: SingleChildScrollView(
+        child: Text(agreementText),  // agreementTextを表示
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('閉じる'),
+        ),
+      ],
     );
   }
 

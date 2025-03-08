@@ -15,6 +15,9 @@ class CreateScreenViewModel extends ChangeNotifier {
   List<String> imageUrls = [];
   bool isUploading = false;
 
+  // 同意書のチェック状態を保持するプロパティ
+  bool isAgreementChecked = false;  // 追加
+
   // カテゴリーの選択
   void selectCategory(String category) {
     selectedCategory = category;
@@ -40,7 +43,13 @@ class CreateScreenViewModel extends ChangeNotifier {
     }
   }
 
-  /// 新規作成時の保存処理
+  // 同意書のチェック状態を更新するメソッド
+  void toggleAgreementChecked(bool value) {
+    isAgreementChecked = value;
+    notifyListeners();
+  }
+
+  // 新規作成時の保存処理
   Future<void> submitProfile(BuildContext context, bool isAdmin) async {
     final productId = FirebaseFirestore.instance.collection('profiles').doc().id;
     final user = FirebaseAuth.instance.currentUser;
