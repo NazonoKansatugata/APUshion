@@ -96,6 +96,14 @@ class _ProfileCardState extends State<ProfileCard> {
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        width: 80,
+                        height: 80,
+                        color: Colors.grey[300],
+                        child: Icon(Icons.image, size: 40, color: Colors.grey[600]),
+                      );
+                    },
                   )
                 : Container(
                     width: 80,

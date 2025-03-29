@@ -79,7 +79,6 @@ class CreateScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
-                // 一般ユーザーと運営で異なるフィールド
                 if (isAdmin)
                   DropdownButtonFormField<String>(
                     value: viewModel.storeController.text.isNotEmpty
@@ -96,14 +95,12 @@ class CreateScreen extends StatelessWidget {
                 else
                   Column(
                     children: [
-                      // 来店予定日をTextFormFieldに設定
                       TextFormField(
                         controller: viewModel.visitDateController,
                         decoration: InputDecoration(
                           labelText: "来店予定日",
                           suffixIcon: GestureDetector(
                             onTap: () async {
-                              // カレンダーを表示
                               DateTime? selectedDate = await showDatePicker(
                                 context: context,
                                 initialDate: DateTime.now(),
@@ -111,14 +108,13 @@ class CreateScreen extends StatelessWidget {
                                 lastDate: DateTime(2101),
                               );
                               if (selectedDate != null) {
-                                // 選択された日付をTextFieldに設定
                                 viewModel.visitDateController.text = "${selectedDate.toLocal()}".split(' ')[0];
                               }
                             },
                             child: Icon(Icons.calendar_today),
                           ),
                         ),
-                        readOnly: true, // テキストの直接入力を無効化
+                        readOnly: true,
                       ),
                       const SizedBox(height: 20),
                       DropdownButtonFormField<String>(
@@ -137,7 +133,6 @@ class CreateScreen extends StatelessWidget {
                   ),
                 const SizedBox(height: 20),
 
-                // 同意書の表示ボタンとチェックボックス
                 Row(
                   children: [
                     ElevatedButton(
@@ -150,7 +145,7 @@ class CreateScreen extends StatelessWidget {
                     Checkbox(
                       value: viewModel.isAgreementChecked,
                       onChanged: (bool? value) {
-                        viewModel.toggleAgreementChecked(value!);  // 同意書のチェック状態を更新
+                        viewModel.toggleAgreementChecked(value!);
                       },
                     ),
                     const Text("同意する"),
@@ -163,9 +158,9 @@ class CreateScreen extends StatelessWidget {
                     onPressed: viewModel.isAgreementChecked
                         ? () {
                             if (profileId == null) {
-                              viewModel.submitProfile(context, isAdmin);
+                              viewModel.submitProfile(context, isAdmin);  // 🔹 ここを修正
                             } else {
-                              viewModel.updateProfile(context, profileId!, isAdmin);
+                              viewModel.updateProfile(context, profileId!, isAdmin);  // 🔹 ここを修正
                             }
                           }
                         : null,
@@ -181,6 +176,12 @@ class CreateScreen extends StatelessWidget {
   }
 
   Future<void> _pickImages(CreateScreenViewModel viewModel) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      debugPrint("エラー: ユーザーが認証されていません");
+      return;
+    }
+
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
       allowMultiple: true,
@@ -188,16 +189,20 @@ class CreateScreen extends StatelessWidget {
     if (result == null) return;
 
     for (var file in result.files.take(5)) {
-      final storageRef = FirebaseStorage.instance.ref().child('uploads/${file.name}');
-      final uploadTask = storageRef.putData(file.bytes!);
-      await uploadTask.whenComplete(() async {
-        final downloadUrl = await storageRef.getDownloadURL();
-        viewModel.addImageUrl(downloadUrl);
-      });
+      final storageRef = FirebaseStorage.instance.ref().child('uploads/${user.uid}/${file.name}');
+      try {
+        final uploadTask = storageRef.putData(file.bytes!);
+        await uploadTask.whenComplete(() async {
+          final downloadUrl = await storageRef.getDownloadURL();
+          viewModel.addImageUrl(downloadUrl);
+          debugPrint("画像のアップロードが成功しました: $downloadUrl");
+        });
+      } catch (e) {
+        debugPrint("アップロードエラー: $e");
+      }
     }
   }
 
-  // 同意書の内容を表示するダイアログ
   void _showAgreementDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -205,7 +210,7 @@ class CreateScreen extends StatelessWidget {
         return AlertDialog(
           title: const Text("売買契約書"),
           content: SingleChildScrollView(
-            child: Text(agreementContent),  // 同意書の内容を表示
+            child: Text(agreementContent),
           ),
           actions: <Widget>[
             TextButton(
