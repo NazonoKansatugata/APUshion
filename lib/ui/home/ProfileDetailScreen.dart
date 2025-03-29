@@ -64,7 +64,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
   Future<void> _purchaseItem() async {
     if (currentUserId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("ログインしてください")),
+        const SnackBar(content: Text("ログインしてください(Please log in)")),
       );
       return;
     }
@@ -85,7 +85,7 @@ Widget _purchaseDialog() {
   return StatefulBuilder(
     builder: (context, setState) {
       return AlertDialog(
-        title: const Text('来店予定日を入力'),
+        title: const Text('来店予定日を入力(Purchase Date)'),
         content: Form(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -98,7 +98,7 @@ Widget _purchaseDialog() {
                 readOnly: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return '来店予定日を選択してください';
+                    return '来店予定日を選択してください(Please select a visit date)';
                   }
                   return null;
                 },
@@ -117,7 +117,7 @@ Widget _purchaseDialog() {
                     visitDateController.text = "${pickedDate?.toLocal()}".split(' ')[0];
                   }
                 },
-                child: Text('カレンダーで選択'),
+                child: Text('カレンダーで選択(Select from Calendar)'),
               ),
               // 契約書表示ボタン
               ElevatedButton(
@@ -127,7 +127,7 @@ Widget _purchaseDialog() {
                     builder: (context) => _agreementDialog(),
                   );
                 },
-                child: Text('契約書を表示'),
+                child: Text('契約書を表示(Show Agreement)'),
               ),
               SizedBox(height: 10),
               // チェックボックスを追加
@@ -143,7 +143,7 @@ Widget _purchaseDialog() {
                   ),
                   Expanded(
                     child: Text(
-                      '契約書に同意する',
+                      '契約書に同意する(I agree to the agreement)',
                       style: TextStyle(fontSize: 16),
                     ),
                   ),
@@ -155,20 +155,20 @@ Widget _purchaseDialog() {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル'),
+            child: const Text('キャンセル(Cancel)'),
           ),
           ElevatedButton(
             onPressed: () async {
               if (visitDateController.text.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('来店予定日を選択してください')),
+                  const SnackBar(content: Text('来店予定日を選択してください(Please select a visit date)')),
                 );
                 return;
               }
 
               if (!isAgreementChecked) { // チェックボックスが選択されていない場合
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('契約書に同意してください')),
+                  const SnackBar(content: Text('契約書に同意してください(Please agree to the agreement)')),
                 );
                 return;
               }
@@ -181,15 +181,15 @@ Widget _purchaseDialog() {
 
                 await FirebaseFirestore.instance.collection('shopVisits').add({
                   'userId': currentUserId,
-                  'userName': FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー',
+                  'userName': FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー(Anonymous)',
                   'visitDate': visitDateController.text,
-                  'product': profileData?['name'] ?? '商品名なし',
+                  'product': profileData?['name'] ?? '商品名なし(Product name not available)',
                   'productId': widget.documentId,
                   'visitType': 'purchase',
                   'createdAt': Timestamp.now(),
                 });
 
-                await FirebaseFirestore.instance.collection('profiles').doc(widget.documentId).update({'status': '購入済み'});
+                await FirebaseFirestore.instance.collection('profiles').doc(widget.documentId).update({'status': '購入済み(Purchased)'});
 
                 setState(() {
                   isPurchased = true;
@@ -197,7 +197,7 @@ Widget _purchaseDialog() {
 
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("購入が完了し、来店予定を追加しました")),
+                  const SnackBar(content: Text("購入が完了し、来店予定を追加しました(Purchase completed and visit scheduled)")),
                 );
               } catch (e) {
                 ScaffoldMessenger.of(context).showSnackBar(
@@ -205,7 +205,7 @@ Widget _purchaseDialog() {
                 );
               }
             },
-            child: const Text('購入'),
+            child: const Text('購入(Purchase)'),
           ),
         ],
       );
@@ -233,7 +233,7 @@ Widget _purchaseDialog() {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("購入を取り消しました")),
+        const SnackBar(content: Text("購入を取り消しました(Purchase canceled)")),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -257,34 +257,47 @@ Widget _purchaseDialog() {
     }
   }
 
-  // 商品画像表示
-  Widget _buildProductImages() {
-    if (profileData?['imageUrls'] != null && profileData!['imageUrls'].isNotEmpty) {
-      return SizedBox(
-        height: 250,
+// 商品画像表示
+Widget _buildProductImages() {
+  if (profileData?['imageUrls'] != null && profileData!['imageUrls'].isNotEmpty) {
+    return Center(  // 中央揃えにする
+      child: Container(
+        width: 300,  // 横幅を適切に設定（例えば300px）
+        height: 250,  // 高さを固定
         child: PageView(
           children: List<Widget>.from(
-            profileData!['imageUrls'].map<Widget>((url) => Image.network(
-              url,
-              fit: BoxFit.cover,
-              width: double.infinity,
+            profileData!['imageUrls'].map<Widget>((url) => Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12), // 角丸
+                color: Colors.grey[300],  // 背景色を設定
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),  // 角を丸くする
+                child: Image.network(
+                  url,
+                  fit: BoxFit.cover,  // 画像を領域にフィットさせる
+                ),
+              ),
             )),
           ),
         ),
-      );
-    } else {
-      return Container(
-        height: 250,
+      ),
+    );
+  } else {
+    return Center(  // 中央揃えにする
+      child: Container(
+        height: 250,  // 高さを固定
         color: Colors.grey[300],
         child: Center(
           child: Text(
-            '画像はありません',
+            '画像はありません(No images available)',
             style: TextStyle(fontSize: 18, color: Colors.grey[600]),
           ),
         ),
-      );
-    }
+      ),
+    );
   }
+}
 
   // 商品詳細カード
   Widget _buildProductDetailsCard() {
@@ -301,7 +314,7 @@ Widget _purchaseDialog() {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                profileData?['name'] ?? '商品名なし',
+                profileData?['name'] ?? '商品名なし(Product name not available)',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 8),
@@ -312,22 +325,22 @@ Widget _purchaseDialog() {
                 ),
               SizedBox(height: 8),
               Text(
-                '価格: ¥${profileData?['price']?.toString() ?? '不明'}',
+                '価格(Price): ¥${profileData?['price']?.toString() ?? '不明(Price unknown)'}',
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 16),
               Text(
-                profileData?['description'] ?? '商品説明なし',
+                profileData?['description'] ?? '商品説明なし(No description available)',
                 style: TextStyle(fontSize: 16, color: Colors.grey[700]),
               ),
               SizedBox(height: 16),
               Text(
-                '取り扱い店舗: ${profileData?['store'] ?? '未設定'}',
+                '取り扱い店舗(Store): ${profileData?['store'] ?? '未設定(Not set)'}',
                 style: TextStyle(fontSize: 16, color: Colors.grey[700]),
               ),
               SizedBox(height: 8),
               Text(
-                '出品者: ${profileData?['userName'] ?? '匿名'}',
+                '出品者(Seller): ${profileData?['userName'] ?? '匿名(Anonymous)'}',
                 style: TextStyle(fontSize: 16, color: Colors.grey[700]),
               ),
               SizedBox(height: 8),
@@ -337,7 +350,7 @@ Widget _purchaseDialog() {
               ),
               SizedBox(height: 8),
               Text(
-                '出品日時: ${profileData?['updatedAt']?.toDate().toString() ?? '不明'}',
+                '出品日時(updatedAt): ${profileData?['updatedAt']?.toDate().toString() ?? '不明(Date unknown)'}',
                 style: TextStyle(fontSize: 16, color: Colors.grey[700]),
               ),
             ],
@@ -350,14 +363,14 @@ Widget _purchaseDialog() {
   // 契約書ダイアログ
   Widget _agreementDialog() {
     return AlertDialog(
-      title: Text('売買契約書'),
+      title: Text('売買契約書(Sales Agreement)'),
       content: SingleChildScrollView(
         child: Text(agreementText),  // agreementTextを表示
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
-          child: const Text('閉じる'),
+          child: const Text('閉じる(Close)'),
         ),
       ],
     );
@@ -374,7 +387,7 @@ Widget _purchaseDialog() {
       backgroundColor: Colors.purple.shade50,
       appBar: AppBar(
         title: Text(
-          "商品詳細",
+          "商品詳細(Product Details)",
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black),
         ),
         backgroundColor: Colors.white,
@@ -388,7 +401,7 @@ Widget _purchaseDialog() {
                 children: [
                   _buildProductImages(),
                   _buildProductDetailsCard(),
-                  if (isAdmin || status == "下書き") 
+                  if (isAdmin || status == "下書き(Draft)") 
                     ElevatedButton(
                       onPressed: _editItem,
                       style: ElevatedButton.styleFrom(
@@ -396,7 +409,7 @@ Widget _purchaseDialog() {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                       ),
-                      child: Text("編集", style: TextStyle(fontSize: 16, color: Colors.white)),
+                      child: Text("編集(edit)", style: TextStyle(fontSize: 16, color: Colors.white)),
                     )
                   else if (isPurchased)
                     ElevatedButton(
@@ -406,7 +419,7 @@ Widget _purchaseDialog() {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                       ),
-                      child: Text("購入取り消し", style: TextStyle(fontSize: 16, color: Colors.white)),
+                      child: Text("購入取り消し(Purchase cancellation)", style: TextStyle(fontSize: 16, color: Colors.white)),
                     )
                   else
                     ElevatedButton(
@@ -416,7 +429,7 @@ Widget _purchaseDialog() {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                       ),
-                      child: Text("購入する", style: TextStyle(fontSize: 16, color: Colors.white)),
+                      child: Text("購入する(buy)", style: TextStyle(fontSize: 16, color: Colors.white)),
                     ),
                   SizedBox(height: 20),
                 ],
@@ -424,7 +437,7 @@ Widget _purchaseDialog() {
             )
           : Center(
               child: Text(
-                'ログインしてください',
+                'ログインしてください(Please log in)',
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.grey[700]),
               ),
             ),

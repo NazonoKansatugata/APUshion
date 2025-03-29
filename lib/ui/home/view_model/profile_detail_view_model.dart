@@ -13,7 +13,7 @@ class ProfileDetailViewModel extends ChangeNotifier {
         .get();
 
     if (profileSnapshot.exists) {
-      isPurchased = profileSnapshot['status'] == '購入済み';
+      isPurchased = profileSnapshot['status'] == '購入済み(purchased)';
       notifyListeners();
     }
   }
@@ -26,7 +26,7 @@ class ProfileDetailViewModel extends ChangeNotifier {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('来店予定日を入力'),
+          title: const Text('来店予定日を入力(Enter visit date)'),
           content: TextField(
             controller: visitDateController,
             decoration: const InputDecoration(hintText: '例: 2024-01-01'),
@@ -34,7 +34,7 @@ class ProfileDetailViewModel extends ChangeNotifier {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text('キャンセル'),
+              child: const Text('キャンセル(Cancel)'),
             ),
             ElevatedButton(
               onPressed: () async {
@@ -50,15 +50,15 @@ class ProfileDetailViewModel extends ChangeNotifier {
                   await FirebaseFirestore.instance
                       .collection('profiles')
                       .doc(documentId)
-                      .update({'status': '購入済み'});
+                      .update({'status': '購入済み(purchased)'});
 
                   await FirebaseFirestore.instance.collection('shopVisits').add({
                     'userId': currentUserId,
                     'userName':
-                        FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー',
+                        FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー(Anonymous)',
                     'productId': documentId,
-                    'product': profileData?['name'] ?? '商品名なし',
-                    'store': profileData?['store'] ?? '店舗情報なし',
+                    'product': profileData?['name'] ?? '商品名なし(No product name)',
+                    'store': profileData?['store'] ?? '店舗情報なし(No store info)',
                     'visitDate': visitDateController.text,
                     'visitType': 'purchase',
                     'createdAt': Timestamp.now(),
@@ -68,7 +68,7 @@ class ProfileDetailViewModel extends ChangeNotifier {
                   notifyListeners();
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text("購入が完了しました")),
+                    const SnackBar(content: Text("購入が完了しました(Purchase completed)")),
                   );
                 } catch (e) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -76,7 +76,7 @@ class ProfileDetailViewModel extends ChangeNotifier {
                   );
                 }
               },
-              child: const Text('購入'),
+              child: const Text('購入(Purchase)'),
             ),
           ],
         );

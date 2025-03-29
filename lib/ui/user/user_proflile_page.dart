@@ -21,13 +21,13 @@ class UserProfileScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('プロフィール'),
+        title: const Text('プロフィール(Profile)'),
         centerTitle: true,
       ),
       body: Container(
   decoration: BoxDecoration(
     gradient: LinearGradient(
-      colors: [Colors.green.shade800, Colors.green.shade600], // 濃い緑色のグラデーション
+      colors: [Colors.green.shade800, Colors.green.shade600], // 濃い緑色のグラデーション(dark green gradient)
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ),
@@ -39,7 +39,7 @@ class UserProfileScreen extends StatelessWidget {
                   child: ListView(
                     children: [
                       const SizedBox(height: 24),
-                      // 丸いアイコン（アバター）
+                      // 丸いアイコン（アバター）(Circular icon (avatar))
                       Center(
                         child: CircleAvatar(
                           radius: 50,
@@ -54,7 +54,7 @@ class UserProfileScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // ユーザー名
+                      // ユーザー名(User name)
                       Center(
                         child: Column(
                           children: [
@@ -82,7 +82,7 @@ class UserProfileScreen extends StatelessWidget {
                                 builder: (context) => UserDetailScreen()),
                           );
                         },
-                        child: const Text('ユーザー情報'),
+                        child: const Text('ユーザー情報(User Details)'),
                       ),
                       const SizedBox(height: 12),
                       ElevatedButton(
@@ -97,7 +97,7 @@ class UserProfileScreen extends StatelessWidget {
                                 builder: (context) => FavoriteScreen()),
                           );
                         },
-                        child: const Text('いいねした商品一覧'),
+                        child: const Text('いいねした商品一覧(Favorite Items List)'),
                       ),
                       const SizedBox(height: 12),
                       ElevatedButton(
@@ -115,7 +115,7 @@ class UserProfileScreen extends StatelessWidget {
                             MaterialPageRoute(builder: (context) => MainScreen()),
                             );
                           },
-                        child: const Text('ログアウト'),
+                        child: const Text('ログアウト(Logout)'),
                       ),
                     ],
                   ),
@@ -124,7 +124,7 @@ class UserProfileScreen extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('ユーザーがログインしていません'),
+                      const Text('ユーザーがログインしていません(User is not logged in)'),
                       const SizedBox(height: 20),
                       ElevatedButton(
                         onPressed: () {
@@ -133,7 +133,7 @@ class UserProfileScreen extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           foregroundColor: Colors.black,
                         ),
-                        child: const Text('ログイン画面へ'),
+                        child: const Text('ログイン画面へ(To Login Screen)'),
                       ),
                     ],
                   ),

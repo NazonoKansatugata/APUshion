@@ -32,7 +32,7 @@ class CreateScreen extends StatelessWidget {
         return viewModel;
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(profileId != null ? "商品編集" : "商品作成")),
+        appBar: AppBar(title: Text(profileId != null ? "商品編集(Edit Product)" : "商品作成(Create Product)")),
         body: Consumer<CreateScreenViewModel>(builder: (context, viewModel, child) {
           return SingleChildScrollView(
             padding: const EdgeInsets.all(16.0),
@@ -41,28 +41,28 @@ class CreateScreen extends StatelessWidget {
               children: [
                 TextField(
                   controller: viewModel.nameController,
-                  decoration: InputDecoration(labelText: "商品名"),
+                  decoration: InputDecoration(labelText: "商品名(Product Name)"),
                 ),
                 const SizedBox(height: 20),
                 TextField(
                   controller: viewModel.descriptionController,
-                  decoration: InputDecoration(labelText: "商品説明"),
+                  decoration: InputDecoration(labelText: "商品説明(Product Description)"),
                 ),
                 const SizedBox(height: 20),
                 if (isAdmin)
                   TextField(
                     controller: viewModel.priceController,
                     keyboardType: TextInputType.number,
-                    decoration: InputDecoration(labelText: "価格"),
+                    decoration: InputDecoration(labelText: "価格(Price)"),
                   ),
                 const SizedBox(height: 20),
                 DropdownButtonFormField<String>(
                   value: viewModel.selectedCategory,
-                  items: ['電子レンジ', '冷蔵庫', '洗濯機'].map((category) {
+                  items: ['電子レンジ(microwave oven)', '冷蔵庫(refrigerator)', '洗濯機(washing machine)'].map((category) {
                     return DropdownMenuItem(value: category, child: Text(category));
                   }).toList(),
                   onChanged: (value) => viewModel.selectedCategory = value!,
-                  decoration: InputDecoration(labelText: "カテゴリ"),
+                  decoration: InputDecoration(labelText: "カテゴリ(Category)"),
                 ),
                 const SizedBox(height: 20),
                 Wrap(
@@ -75,7 +75,7 @@ class CreateScreen extends StatelessWidget {
                 ),
                 ElevatedButton(
                   onPressed: () => _pickImages(viewModel),
-                  child: const Text('画像を選択（最大5枚）'),
+                  child: const Text('画像を選択（最大5枚）(Select Images, Max 5)'),
                 ),
                 const SizedBox(height: 20),
 
@@ -90,7 +90,7 @@ class CreateScreen extends StatelessWidget {
                     onChanged: (value) {
                       viewModel.storeController.text = value!;
                     },
-                    decoration: InputDecoration(labelText: "取り扱い店舗"),
+                    decoration: InputDecoration(labelText: "取り扱い店舗(Store)"),
                   )
                 else
                   Column(
@@ -98,7 +98,7 @@ class CreateScreen extends StatelessWidget {
                       TextFormField(
                         controller: viewModel.visitDateController,
                         decoration: InputDecoration(
-                          labelText: "来店予定日",
+                          labelText: "来店予定日(Visit Date)",
                           suffixIcon: GestureDetector(
                             onTap: () async {
                               DateTime? selectedDate = await showDatePicker(
@@ -127,7 +127,7 @@ class CreateScreen extends StatelessWidget {
                         onChanged: (value) {
                           viewModel.storeController.text = value!;
                         },
-                        decoration: InputDecoration(labelText: "来店店舗"),
+                        decoration: InputDecoration(labelText: "来店店舗(Visit Store)"),
                       ),
                     ],
                   ),
@@ -139,7 +139,7 @@ class CreateScreen extends StatelessWidget {
                       onPressed: () {
                         _showAgreementDialog(context);
                       },
-                      child: const Text("同意書を見る"),
+                      child: const Text("同意書を見る(View Agreement)"),
                     ),
                     const SizedBox(width: 20),
                     Checkbox(
@@ -148,7 +148,7 @@ class CreateScreen extends StatelessWidget {
                         viewModel.toggleAgreementChecked(value!);
                       },
                     ),
-                    const Text("同意する"),
+                    const Text("同意する(Agree)"),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -164,7 +164,7 @@ class CreateScreen extends StatelessWidget {
                             }
                           }
                         : null,
-                    child: const Text("決定！"),
+                    child: const Text("決定！(Submit)"),
                   ),
                 ),
               ],
@@ -208,7 +208,7 @@ class CreateScreen extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("売買契約書"),
+          title: const Text("売買契約書(Sales Agreement)"),
           content: SingleChildScrollView(
             child: Text(agreementContent),
           ),
@@ -217,7 +217,7 @@ class CreateScreen extends StatelessWidget {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text("閉じる"),
+              child: const Text("閉じる(Close)"),
             ),
           ],
         );

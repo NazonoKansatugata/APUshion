@@ -12,7 +12,7 @@ class CreateScreenViewModel extends ChangeNotifier {
   final TextEditingController priceController = TextEditingController();
   final TextEditingController storeController = TextEditingController(text: '本店');
   final TextEditingController visitDateController = TextEditingController();
-  String selectedCategory = '電子レンジ';
+  String selectedCategory = '電子レンジ(microwave oven)';
   List<String> imageUrls = [];
   bool isUploading = false;
 
@@ -40,7 +40,7 @@ class CreateScreenViewModel extends ChangeNotifier {
       imageUrls.remove(url);
       notifyListeners();
     } catch (e) {
-      debugPrint('画像の削除に失敗しました: $e');
+      debugPrint('画像の削除に失敗しました(Failed to delete image): $e');
     }
   }
 
@@ -63,7 +63,7 @@ class CreateScreenViewModel extends ChangeNotifier {
     String downloadUrl = await uploadTask.ref.getDownloadURL();
     return downloadUrl;
   } catch (e) {
-    debugPrint('画像のアップロードに失敗しました: $e');
+    debugPrint('画像のアップロードに失敗しました(Failed to upload image): $e');
     return null;
   }
 }
@@ -86,8 +86,8 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
     }
   }
 
-  // status を一般ユーザーは「下書き」、運営は「出品中」に設定
-  final status = isAdmin ? '出品中' : '下書き';
+  // status を一般ユーザーは「下書き(draft)」、運営は「出品中(listed)」に設定
+  final status = isAdmin ? '出品中(listed)' : '下書き(draft)';
 
   final productData = {
     'id': productId,
@@ -107,7 +107,7 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
   try {
     // 1. 商品情報を Firestore の profiles コレクションに保存
     await FirebaseFirestore.instance.collection('profiles').doc(productId).set(productData);
-    debugPrint('商品情報を保存しました: $productData');
+    debugPrint('商品情報を保存しました(Saved product data): $productData');
 
     // 2. 商品情報を保存後、来店予定を作成
     if (!isAdmin) {
@@ -115,14 +115,14 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
     }
 
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(isAdmin ? '出品しました' : '下書きとして保存しました')),
+      SnackBar(content: Text(isAdmin ? '出品しました(Listed)' : '下書きとして保存しました(Saved as draft)')),
     );
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (context) => MainScreen()),
     );
   } catch (e) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('保存に失敗しました: $e')),
+      SnackBar(content: Text('保存に失敗しました(Failed to save): $e')),
     );
   }
 }
@@ -141,7 +141,7 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
     };
 
     await FirebaseFirestore.instance.collection('shopVisits').add(visitData);
-    debugPrint('来店予定を保存しました: $visitData');
+    debugPrint('来店予定を保存しました(Saved visit schedule): $visitData');
   }
 
   // 更新処理
@@ -149,7 +149,7 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    final status = isAdmin ? '出品中' : '下書き';
+    final status = isAdmin ? '出品中(listed)' : '下書き(draft)';
 
     final productData = {
       'name': nameController.text,
@@ -173,12 +173,12 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(isAdmin ? '出品情報を更新しました' : '下書きを更新しました')),
+        SnackBar(content: Text(isAdmin ? '出品情報を更新しました(Listing updated)' : '下書きを更新しました(Draft updated)')),
       );
       Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('更新に失敗しました: $e')),
+        SnackBar(content: Text('更新に失敗しました(Failed to update): $e')),
       );
     }
   }
@@ -193,7 +193,7 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
     for (var doc in visitDocs.docs) {
       await doc.reference.delete();
     }
-    debugPrint('来店予定を削除しました: productId=$productId');
+    debugPrint('来店予定を削除しました(Deleted visit schedule): productId=$productId');
   }
 
   @override
