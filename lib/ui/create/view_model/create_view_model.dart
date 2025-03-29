@@ -25,22 +25,21 @@ class CreateScreenViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // 画像の追加
-  void addImageUrl(String url) {
-    if (imageUrls.length < 5) {
-      imageUrls.add(url);
-      notifyListeners();
+  // 画像の並び替え
+  void reorderImages(int oldIndex, int newIndex) {
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
     }
+    final String movedImage = imageUrls.removeAt(oldIndex);
+    imageUrls.insert(newIndex, movedImage);
+    notifyListeners();
   }
 
-  // 画像の削除
-  Future<void> removeImageUrl(String url) async {
-    try {
-      await FirebaseStorage.instance.refFromURL(url).delete();
-      imageUrls.remove(url);
+  // 画像の削除（インデックス指定）
+  void removeImageAt(int index) {
+    if (index >= 0 && index < imageUrls.length) {
+      imageUrls.removeAt(index);
       notifyListeners();
-    } catch (e) {
-      debugPrint('画像の削除に失敗しました(Failed to delete image): $e');
     }
   }
 
