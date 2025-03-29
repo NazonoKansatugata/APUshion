@@ -171,7 +171,9 @@ class CreateScreen extends StatelessWidget {
 
                 Center(
                   child: ElevatedButton(
-                    onPressed: viewModel.isAgreementChecked
+                    onPressed: viewModel.isAgreementChecked &&
+                               viewModel.visitDateController.text.isNotEmpty &&
+                               viewModel.nameController.text.isNotEmpty
                         ? () {
                             if (profileId == null) {
                               viewModel.submitProfile(context, isAdmin);  // 🔹 ここを修正
