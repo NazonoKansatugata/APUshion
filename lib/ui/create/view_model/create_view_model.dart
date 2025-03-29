@@ -196,6 +196,42 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
     debugPrint('来店予定を削除しました(Deleted visit schedule): productId=$productId');
   }
 
+  // プロファイル削除処理
+  Future<void> deleteProfile(BuildContext context, String profileId) async {
+    try {
+      // Firestore からプロファイルを取得
+      final profileDoc = await FirebaseFirestore.instance.collection('profiles').doc(profileId).get();
+      if (!profileDoc.exists) return;
+
+      final profileData = profileDoc.data()!;
+      final imageUrls = List<String>.from(profileData['imageUrls'] ?? []);
+
+      // Firebase Storage 内の画像を削除
+      for (var imageUrl in imageUrls) {
+        try {
+          await FirebaseStorage.instance.refFromURL(imageUrl).delete();
+        } catch (e) {
+          debugPrint('画像の削除に失敗しました(Failed to delete image): $e');
+        }
+      }
+
+      // Firestore の profiles コレクションから削除
+      await FirebaseFirestore.instance.collection('profiles').doc(profileId).delete();
+
+      // 来店予定を削除
+      await _deleteVisitSchedule(profileId);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('プロファイルを削除しました(Profile deleted)')),
+      );
+      Navigator.pop(context);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('削除に失敗しました(Failed to delete): $e')),
+      );
+    }
+  }
+
   @override
   void dispose() {
     nameController.dispose();

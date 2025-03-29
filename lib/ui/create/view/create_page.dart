@@ -167,6 +167,40 @@ class CreateScreen extends StatelessWidget {
                     child: const Text("決定！(Submit)"),
                   ),
                 ),
+
+                if (profileId != null)
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: const Text("確認(Confirm)"),
+                              content: const Text("本当に削除しますか？(Are you sure you want to delete this?)"),
+                              actions: <Widget>[
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(false),
+                                  child: const Text("キャンセル(Cancel)"),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(true),
+                                  child: const Text("削除(Delete)"),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+
+                        if (confirm == true) {
+                          final viewModel = Provider.of<CreateScreenViewModel>(context, listen: false);
+                          await viewModel.deleteProfile(context, profileId!);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red), // 修正: primary -> backgroundColor
+                      child: const Text("削除(Delete)"),
+                    ),
+                  ),
               ],
             ),
           );
