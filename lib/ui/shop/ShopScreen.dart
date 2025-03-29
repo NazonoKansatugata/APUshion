@@ -85,107 +85,116 @@ class _ShopScreenState extends State<ShopScreen> {
       appBar: AppBar(
         title: const Text("ショップ"),
       ),
-      body: Column(
-        children: [
-          // 出品ボタンを上部に配置
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            child: ElevatedButton.icon(
-              icon: const Icon(Icons.add_box, color: Colors.white),
-              label: const Text("出品する", style: TextStyle(color: Colors.white)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                padding: const EdgeInsets.symmetric(vertical: 12),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.green.shade800, Colors.green.shade600], // 濃い緑色のグラデーション
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+        child: Column(
+          children: [
+            // 出品ボタンを上部に配置
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.add_box, color: Colors.white),
+                label: const Text("出品する", style: TextStyle(color: Colors.white)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
+                onPressed: _navigateToCreate,
               ),
-              onPressed: _navigateToCreate,
             ),
-          ),
 
-          // 来店予定リスト
-          Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-              stream: isAdmin
-                  ? FirebaseFirestore.instance
-                      .collection('shopVisits')
-                      .orderBy('createdAt', descending: true)
-                      .snapshots()
-                  : FirebaseFirestore.instance
-                      .collection('shopVisits')
-                      .where('userId', isEqualTo: user.uid) // 一般ユーザーは自分の予定のみ
-                      .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return const Center(child: Text("来店予定はありません"));
-                }
+            // 来店予定リスト
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: isAdmin
+                    ? FirebaseFirestore.instance
+                        .collection('shopVisits')
+                        .orderBy('createdAt', descending: true)
+                        .snapshots()
+                    : FirebaseFirestore.instance
+                        .collection('shopVisits')
+                        .where('userId', isEqualTo: user.uid) // 一般ユーザーは自分の予定のみ
+                        .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                    return const Center(child: Text("来店予定はありません"));
+                  }
 
-                var visits = snapshot.data!.docs;
+                  var visits = snapshot.data!.docs;
 
-                return ListView.builder(
-                  itemCount: visits.length,
-                  itemBuilder: (context, index) {
-                    var visit = visits[index].data() as Map<String, dynamic>;
-                    String? productId = visit['productId'];
+                  return ListView.builder(
+                    itemCount: visits.length,
+                    itemBuilder: (context, index) {
+                      var visit = visits[index].data() as Map<String, dynamic>;
+                      String? productId = visit['productId'];
 
-                    // アイコンと色、タグを決定
-                    IconData iconData;
-                    Color color;
-                    String tag;
-                    if (visit['visitType'] == 'purchase') {
-                      iconData = Icons.shopping_cart;
-                      color = Colors.green;
-                      tag = "購入予定";
-                    } else {
-                      iconData = Icons.store;
-                      color = Colors.orange;
-                      tag = "出品予定";
-                    }
+                      // アイコンと色、タグを決定
+                      IconData iconData;
+                      Color color;
+                      String tag;
+                      if (visit['visitType'] == 'purchase') {
+                        iconData = Icons.shopping_cart;
+                        color = Colors.green;
+                        tag = "購入予定";
+                      } else {
+                        iconData = Icons.store;
+                        color = Colors.orange;
+                        tag = "出品予定";
+                      }
 
-                    return Card(
-                      margin: const EdgeInsets.all(8),
-                      child: ListTile(
-                        leading: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(iconData, color: color),
-                            const SizedBox(height: 4),
-                            Text(tag,
-                                style: TextStyle(
-                                    color: color,
-                                    fontWeight: FontWeight.bold)),
-                          ],
+                      return Card(
+                        margin: const EdgeInsets.all(8),
+                        child: ListTile(
+                          leading: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(iconData, color: color),
+                              const SizedBox(height: 4),
+                              Text(tag,
+                                  style: TextStyle(
+                                      color: color,
+                                      fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                          title: Text(visit['product'] ?? '商品名なし'),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("来店予定日: ${visit['visitDate']}"),
+                              if (isAdmin) Text("ユーザー: ${visit['userName']}"),
+                            ],
+                          ),
+                          trailing: const Icon(Icons.arrow_forward),
+                          onTap: productId != null
+                              ? () => _navigateToDetail(productId)
+                              : () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('商品情報が見つかりません')),
+                                  );
+                                },
                         ),
-                        title: Text(visit['product'] ?? '商品名なし'),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("来店予定日: ${visit['visitDate']}"),
-                            if (isAdmin) Text("ユーザー: ${visit['userName']}"),
-                          ],
-                        ),
-                        trailing: const Icon(Icons.arrow_forward),
-                        onTap: productId != null
-                            ? () => _navigateToDetail(productId)
-                            : () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('商品情報が見つかりません')),
-                                );
-                              },
-                      ),
-                    );
-                  },
-                );
-              },
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

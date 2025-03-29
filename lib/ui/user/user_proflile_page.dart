@@ -25,13 +25,13 @@ class UserProfileScreen extends StatelessWidget {
         centerTitle: true,
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFE1BEE7), Color(0xFFF8BBD0)], // 薄い紫から薄いピンク
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+  decoration: BoxDecoration(
+    gradient: LinearGradient(
+      colors: [Colors.green.shade800, Colors.green.shade600], // 濃い緑色のグラデーション
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+  ),
         child: SafeArea(
           child: user != null
               ? Padding(

@@ -17,7 +17,7 @@ class HomeScreen extends StatelessWidget {
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
           ),
         ),
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.green.shade800, // 濃い緑色
         elevation: 0,
         actions: [
           Padding(
@@ -37,11 +37,7 @@ class HomeScreen extends StatelessWidget {
       extendBodyBehindAppBar: true,
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.deepPurple.shade400, Colors.pinkAccent.shade400],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: Colors.green.shade800, // 背景を濃い緑色に変更
         ),
         child: Column(
           children: [
@@ -100,7 +96,7 @@ class HomeScreen extends StatelessWidget {
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   padding: EdgeInsets.symmetric(vertical: 12),
                 ),
-                child: Text("すべての商品を見る", style: TextStyle(fontSize: 18, color: Colors.black)),
+                child: Text("すべての商品を見る", style: TextStyle(fontSize: 18, color: Colors.green.shade800)), // ボタンの文字色を濃い緑に変更
               ),
             ),
           ],
