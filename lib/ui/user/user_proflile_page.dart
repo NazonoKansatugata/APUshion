@@ -8,6 +8,8 @@ import 'package:apusion/ui/user/user_proflile_page.dart';
 import 'package:apusion/ui/favorite/favorite_page.dart';
 import 'package:apusion/ui/home/ProfileListScreen.dart';
 import 'package:apusion/ui/user/user_detail_page.dart';
+import 'package:apusion/ui/home/home_page.dart'; // これが必要
+
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({Key? key}) : super(key: key);
@@ -104,10 +106,15 @@ class UserProfileScreen extends StatelessWidget {
                           minimumSize: const Size.fromHeight(48),
                           foregroundColor: Colors.black,
                         ),
-                        onPressed: () {
+                        onPressed: () async {
                           // ログアウト処理
-                          authViewModel.signOut();
-                        },
+                          await authViewModel.signOut();
+                          // HomeScreenに遷移
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => MainScreen()),
+                            );
+                          },
                         child: const Text('ログアウト'),
                       ),
                     ],
