@@ -20,6 +20,8 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
   bool isOwner = false;
   Map<String, dynamic>? profileData;
   bool isPurchased = false;
+  final PageController _pageController = PageController(); // ページコントローラーを追加
+  int _currentPage = 0; // 現在のページを追跡
 
   @override
   void initState() {
@@ -76,7 +78,6 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
   }
 
   // 購入処理ダイアログ
-// 購入処理ダイアログ
 Widget _purchaseDialog() {
   final TextEditingController visitDateController = TextEditingController();
   DateTime? pickedDate;
@@ -173,6 +174,13 @@ Widget _purchaseDialog() {
                 return;
               }
 
+              if (profileData?['name'] == null || profileData!['name'].isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('商品名がありません(Product name is required)')),
+                );
+                return;
+              }
+
               try {
                 await FirebaseFirestore.instance.collection('purchases').doc(widget.documentId).set({
                   'buyerId': currentUserId,
@@ -226,7 +234,7 @@ Widget _purchaseDialog() {
 
       await Future.wait(visitSnapshot.docs.map((doc) => doc.reference.delete()));
 
-      await FirebaseFirestore.instance.collection('profiles').doc(widget.documentId).update({'status': '出品中'});
+      await FirebaseFirestore.instance.collection('profiles').doc(widget.documentId).update({'status': '出品中(listed)'});
 
       setState(() {
         isPurchased = false;
@@ -260,33 +268,98 @@ Widget _purchaseDialog() {
 // 商品画像表示
 Widget _buildProductImages() {
   if (profileData?['imageUrls'] != null && profileData!['imageUrls'].isNotEmpty) {
-    return Center(  // 中央揃えにする
-      child: Container(
-        width: 300,  // 横幅を適切に設定（例えば300px）
-        height: 250,  // 高さを固定
-        child: PageView(
-          children: List<Widget>.from(
-            profileData!['imageUrls'].map<Widget>((url) => Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12), // 角丸
-                color: Colors.grey[300],  // 背景色を設定
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),  // 角を丸くする
-                child: Image.network(
-                  url,
-                  fit: BoxFit.cover,  // 画像を領域にフィットさせる
-                ),
-              ),
-            )),
+    return Column(
+      children: [
+        Center(
+          child: Container(
+            width: 300,
+            height: 250,
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: profileData!['imageUrls'].length,
+              onPageChanged: (index) {
+                setState(() {
+                  _currentPage = index; // ページ変更時に現在のページを更新
+                });
+              },
+              itemBuilder: (context, index) {
+                return Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: Colors.grey[300],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      profileData!['imageUrls'][index],
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
         ),
-      ),
+        SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            profileData!['imageUrls'].length,
+            (index) => Container(
+              margin: EdgeInsets.symmetric(horizontal: 4),
+              width: _currentPage == index ? 12 : 8,
+              height: _currentPage == index ? 12 : 8,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _currentPage == index ? Colors.blue : Colors.grey,
+              ),
+            ),
+          ),
+        ),
+        SizedBox(height: 10),
+        // サムネイルを追加
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              profileData!['imageUrls'].length,
+              (index) => GestureDetector(
+                onTap: () {
+                  _pageController.jumpToPage(index); // サムネイルをタップしたら該当ページに移動
+                  setState(() {
+                    _currentPage = index;
+                  });
+                },
+                child: Container(
+                  margin: EdgeInsets.symmetric(horizontal: 4),
+                  width: 60,
+                  height: 60,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: _currentPage == index ? Colors.blue : Colors.grey,
+                      width: 2,
+                    ),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      profileData!['imageUrls'][index],
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   } else {
-    return Center(  // 中央揃えにする
+    return Center(
       child: Container(
-        height: 250,  // 高さを固定
+        height: 250,
         color: Colors.grey[300],
         child: Center(
           child: Text(
@@ -401,7 +474,7 @@ Widget _buildProductImages() {
                 children: [
                   _buildProductImages(),
                   _buildProductDetailsCard(),
-                  if (isAdmin || status == "下書き(Draft)") 
+                  if (isAdmin || status == "下書き(draft)") // 一般ユーザーでも下書きの場合は編集可能
                     ElevatedButton(
                       onPressed: _editItem,
                       style: ElevatedButton.styleFrom(
@@ -442,5 +515,11 @@ Widget _buildProductImages() {
               ),
             ),
     );
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose(); // ページコントローラーを破棄
+    super.dispose();
   }
 }

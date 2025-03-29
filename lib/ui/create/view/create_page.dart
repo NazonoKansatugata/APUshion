@@ -66,16 +66,32 @@ class CreateScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 Wrap(
-                  children: viewModel.imageUrls.map((imageUrl) {
-                    return Padding(
-                      padding: const EdgeInsets.all(4.0),
-                      child: Image.network(imageUrl, width: 80, height: 80),
-                    );
-                  }).toList(),
-                ),
-                ElevatedButton(
-                  onPressed: () => _pickImages(viewModel),
-                  child: const Text('画像を選択（最大5枚）(Select Images, Max 5)'),
+                  children: [
+                    ReorderableListView(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      onReorder: (oldIndex, newIndex) {
+                        viewModel.reorderImages(oldIndex, newIndex);
+                      },
+                      children: [
+                        for (int i = 0; i < viewModel.imageUrls.length; i++)
+                          ListTile(
+                            key: ValueKey(viewModel.imageUrls[i]),
+                            leading: Image.network(viewModel.imageUrls[i], width: 80, height: 80),
+                            trailing: IconButton(
+                              icon: Icon(Icons.delete, color: Colors.red),
+                              onPressed: () {
+                                viewModel.removeImageAt(i);
+                              },
+                            ),
+                          ),
+                      ],
+                    ),
+                    ElevatedButton(
+                      onPressed: () => _pickImages(context, viewModel),
+                      child: const Text('画像を選択（最大5枚）(Select Images, Max 5)'),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 20),
 
@@ -155,7 +171,9 @@ class CreateScreen extends StatelessWidget {
 
                 Center(
                   child: ElevatedButton(
-                    onPressed: viewModel.isAgreementChecked
+                    onPressed: viewModel.isAgreementChecked &&
+                               viewModel.visitDateController.text.isNotEmpty &&
+                               viewModel.nameController.text.isNotEmpty
                         ? () {
                             if (profileId == null) {
                               viewModel.submitProfile(context, isAdmin);  // 🔹 ここを修正
@@ -167,6 +185,40 @@ class CreateScreen extends StatelessWidget {
                     child: const Text("決定！(Submit)"),
                   ),
                 ),
+
+                if (profileId != null)
+                  Center(
+                    child: ElevatedButton(
+                      onPressed: () async {
+                        final confirm = await showDialog<bool>(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: const Text("確認(Confirm)"),
+                              content: const Text("本当に削除しますか？(Are you sure you want to delete this?)"),
+                              actions: <Widget>[
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(false),
+                                  child: const Text("キャンセル(Cancel)"),
+                                ),
+                                TextButton(
+                                  onPressed: () => Navigator.of(context).pop(true),
+                                  child: const Text("削除(Delete)"),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+
+                        if (confirm == true) {
+                          final viewModel = Provider.of<CreateScreenViewModel>(context, listen: false);
+                          await viewModel.deleteProfile(context, profileId!);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red), // 修正: primary -> backgroundColor
+                      child: const Text("削除(Delete)"),
+                    ),
+                  ),
               ],
             ),
           );
@@ -175,7 +227,7 @@ class CreateScreen extends StatelessWidget {
     );
   }
 
-  Future<void> _pickImages(CreateScreenViewModel viewModel) async {
+  Future<void> _pickImages(BuildContext context, CreateScreenViewModel viewModel) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       debugPrint("エラー: ユーザーが認証されていません");
@@ -188,19 +240,54 @@ class CreateScreen extends StatelessWidget {
     );
     if (result == null) return;
 
-    for (var file in result.files.take(5)) {
+    for (var file in result.files.take(5 - viewModel.imageUrls.length)) { // 最大5枚まで制限
       final storageRef = FirebaseStorage.instance.ref().child('uploads/${user.uid}/${file.name}');
       try {
         final uploadTask = storageRef.putData(file.bytes!);
         await uploadTask.whenComplete(() async {
           final downloadUrl = await storageRef.getDownloadURL();
-          viewModel.addImageUrl(downloadUrl);
+
+          // アップロード後にリストに追加
+          viewModel.imageUrls.add(downloadUrl);
+          viewModel.notifyListeners();
+
           debugPrint("画像のアップロードが成功しました: $downloadUrl");
         });
       } catch (e) {
         debugPrint("アップロードエラー: $e");
       }
     }
+  }
+
+  Future<int?> _getInsertIndex(BuildContext context, int maxIndex) async {
+    return showDialog<int>(
+      context: context,
+      builder: (BuildContext context) {
+        int? selectedIndex;
+        return AlertDialog(
+          title: const Text("画像の挿入位置を選択(Select Insert Position)"),
+          content: DropdownButtonFormField<int>(
+            value: selectedIndex,
+            items: List.generate(maxIndex + 1, (index) {
+              return DropdownMenuItem(value: index, child: Text("位置 $index (Position $index)"));
+            }),
+            onChanged: (value) {
+              selectedIndex = value;
+            },
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(null),
+              child: const Text("キャンセル(Cancel)"),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(selectedIndex),
+              child: const Text("決定(Confirm)"),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _showAgreementDialog(BuildContext context) {

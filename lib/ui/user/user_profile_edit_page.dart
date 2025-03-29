@@ -53,20 +53,31 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
       }
       final file = result.files.single;
 
-      _fileName = file.name;
-      final storageRef =
-          FirebaseStorage.instance.ref().child('uploads/${file.name}');
-      final metadata = SettableMetadata(
-        contentType: 'image/png',
-      );
+      // 元の写真を削除
+      if (_photoURLController.text.isNotEmpty) {
+        try {
+          await FirebaseStorage.instance.refFromURL(_photoURLController.text).delete();
+          debugPrint('元の写真を削除しました(Deleted old photo)');
+        } catch (e) {
+          debugPrint('元の写真の削除に失敗しました(Failed to delete old photo): $e');
+        }
+      }
+
+      // 新しい写真を icon ディレクトリに保存
+      final user = Provider.of<AuthViewModel>(context, listen: false).currentUser;
+      if (user == null) return;
+
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('icon/${user.uid}/${file.name}');
+      final metadata = SettableMetadata(contentType: 'image/png');
       final uploadTask = storageRef.putData(file.bytes!, metadata);
 
       await uploadTask.whenComplete(() async {
         final downloadUrl = await storageRef.getDownloadURL();
         _photoURLController.text = downloadUrl;
-        print('Download URL: $downloadUrl');
+        debugPrint('新しい写真をアップロードしました(Uploaded new photo): $downloadUrl');
       });
-      // print('file: $file');
     }
 
     return Scaffold(
