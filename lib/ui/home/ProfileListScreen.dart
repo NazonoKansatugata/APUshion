@@ -9,7 +9,7 @@ class ProfileListScreen extends StatefulWidget {
 }
 
 class _ProfileListScreenState extends State<ProfileListScreen> {
-  String selectedCategory = "すべて"; // デフォルトのカテゴリ
+  String selectedCategory = "すべて(All)"; // デフォルトのカテゴリ
 
   @override
   Widget build(BuildContext context) {
@@ -18,7 +18,7 @@ class _ProfileListScreenState extends State<ProfileListScreen> {
         title: Padding(
           padding: EdgeInsets.only(top: 20),
           child: Text(
-            "ぷろふぃーる一覧",
+            "商品一覧(Catalog page)",
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
           ),
         ),
@@ -30,7 +30,7 @@ class _ProfileListScreenState extends State<ProfileListScreen> {
             child: DropdownButton<String>(
               value: selectedCategory,
               dropdownColor: Colors.white,
-              items: ["すべて", "電子レンジ", "冷蔵庫", "洗濯機"]
+              items: ["すべて(All)", "電子レンジ(microwave oven)", "冷蔵庫(refrigerator)", "洗濯機(washing machine)"]
                   .map((category) => DropdownMenuItem(
                         value: category,
                         child: Text(category),
@@ -71,14 +71,14 @@ class _ProfileListScreenState extends State<ProfileListScreen> {
             SizedBox(height: kToolbarHeight + 30), // 余白を増やす
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream: selectedCategory == "すべて"
+                stream: selectedCategory == "すべて(All)"
                     ? FirebaseFirestore.instance
                         .collection('profiles')
-                        .where('status', isEqualTo: '出品中')
+                        .where('status', isEqualTo: '出品中(listed)')
                         .snapshots()
                     : FirebaseFirestore.instance
                         .collection('profiles')
-                        .where('status', isEqualTo: '出品中')
+                        .where('status', isEqualTo: '出品中(listed)')
                         .where('category', isEqualTo: selectedCategory)
                         .snapshots(),
                 builder: (context, snapshot) {

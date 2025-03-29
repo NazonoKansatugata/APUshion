@@ -42,7 +42,7 @@ class _ProfileCardState extends State<ProfileCard> {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("ログインしてください")),
+        SnackBar(content: Text("ログインしてください(Please log in)")),
       );
       return;
     }
@@ -55,7 +55,7 @@ class _ProfileCardState extends State<ProfileCard> {
           .doc(widget.documentId)
           .delete();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("お気に入りを解除しました")),
+        SnackBar(content: Text("お気に入りを解除しました(Removed from favorites)")),
       );
     } else {
       await FirebaseFirestore.instance
@@ -65,7 +65,7 @@ class _ProfileCardState extends State<ProfileCard> {
           .doc(widget.documentId)
           .set({'isFavorite': true});
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("お気に入りに追加しました")),
+        SnackBar(content: Text("お気に入りに追加しました(Added to favorites)")),
       );
     }
 
@@ -112,11 +112,13 @@ class _ProfileCardState extends State<ProfileCard> {
                     child: Icon(Icons.image, size: 40, color: Colors.grey[600]),
                   ),
           ),
-          title: Text(widget.profile['name'] ?? '名前なし'),
+          title: Text(widget.profile['name'] ?? '名前なし(No name)'),
           subtitle: Row(
             children: [
               if (widget.profile['category'] != null)
                 _buildTag(widget.profile['category']),
+              if (widget.profile['price'] != null)
+                _buildTag('¥${widget.profile['price']}'), // 円を追加
             ],
           ),
           trailing: IconButton(

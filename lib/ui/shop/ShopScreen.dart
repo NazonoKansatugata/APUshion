@@ -33,7 +33,7 @@ class _ShopScreenState extends State<ShopScreen> {
 
     await FirebaseFirestore.instance.collection('shopVisits').add({
       'userId': user.uid,
-      'userName': user.displayName ?? '匿名ユーザー',
+      'userName': user.displayName ?? '匿名ユーザー(Anonymous)',
       'visitDate': _visitDateController.text,
       'product': _productController.text,
       'visitType': _visitType,
@@ -44,7 +44,7 @@ class _ShopScreenState extends State<ShopScreen> {
     _productController.clear();
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('来店予定を追加しました')),
+      const SnackBar(content: Text('来店予定を追加しました(Added visit schedule)')),
     );
   }
 
@@ -76,14 +76,14 @@ class _ShopScreenState extends State<ShopScreen> {
 
     if (user == null) {
       return Scaffold(
-        appBar: AppBar(title: const Text("ショップ")),
-        body: const Center(child: Text("ログインしてください")),
+        appBar: AppBar(title: const Text("Shop")),
+        body: const Center(child: Text("ログインしてください(Please log in)")),
       );
     }
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text("ショップ"),
+        title: const Text("Shop"),
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -101,7 +101,7 @@ class _ShopScreenState extends State<ShopScreen> {
               padding: const EdgeInsets.all(16),
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.add_box, color: Colors.white),
-                label: const Text("出品する", style: TextStyle(color: Colors.white)),
+                label: const Text("出品する(List)", style: TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   padding: const EdgeInsets.symmetric(vertical: 12),
@@ -130,7 +130,7 @@ class _ShopScreenState extends State<ShopScreen> {
                     return const Center(child: CircularProgressIndicator());
                   }
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return const Center(child: Text("来店予定はありません"));
+                    return const Center(child: Text("来店予定はありません(No visit schedule)"));
                   }
 
                   var visits = snapshot.data!.docs;
@@ -148,11 +148,11 @@ class _ShopScreenState extends State<ShopScreen> {
                       if (visit['visitType'] == 'purchase') {
                         iconData = Icons.shopping_cart;
                         color = Colors.green;
-                        tag = "購入予定";
+                        tag = "購入予定(Purchase)";
                       } else {
                         iconData = Icons.store;
                         color = Colors.orange;
-                        tag = "出品予定";
+                        tag = "出品予定(Listing)";
                       }
 
                       return Card(
@@ -169,12 +169,12 @@ class _ShopScreenState extends State<ShopScreen> {
                                       fontWeight: FontWeight.bold)),
                             ],
                           ),
-                          title: Text(visit['product'] ?? '商品名なし'),
+                          title: Text(visit['product'] ?? '商品名なし(No product name)'),
                           subtitle: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text("来店予定日: ${visit['visitDate']}"),
-                              if (isAdmin) Text("ユーザー: ${visit['userName']}"),
+                              Text("来店予定日(Scheduled visit date): ${visit['visitDate']}"),
+                              if (isAdmin) Text("ユーザー(UserName): ${visit['userName']}"),
                             ],
                           ),
                           trailing: const Icon(Icons.arrow_forward),
@@ -183,7 +183,7 @@ class _ShopScreenState extends State<ShopScreen> {
                               : () {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(
-                                        content: Text('商品情報が見つかりません')),
+                                        content: Text('商品情報が見つかりません(Product information not found)')),
                                   );
                                 },
                         ),

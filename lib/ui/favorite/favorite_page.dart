@@ -11,7 +11,7 @@ class FavoriteScreen extends StatelessWidget {
         title: Padding(
           padding: EdgeInsets.only(top: 20),
           child: Text(
-            "お気に入り一覧",
+            "お気に入り一覧((Favorites)",
             style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
           ),
         ),
@@ -44,7 +44,7 @@ class FavoriteScreen extends StatelessWidget {
                   if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                     return Center(
                       child: Text(
-                        "お気に入りのプロフィールはありません",
+                        "お気に入りの商品はありません(No favorite products)",
                         style: TextStyle(color: Colors.white, fontSize: 18),
                       ),
                     );
