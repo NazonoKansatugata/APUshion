@@ -7,7 +7,6 @@ import 'package:apusion/ui/auth/view_model/auth_view_model.dart';
 import 'email_login_page.dart';
 import 'email_sign_up_page.dart';
 import 'package:apusion/ui/home/home_page.dart';
-import 'package:apusion/ui/user/user_create_list_page.dart';
 
 class AuthPage extends StatelessWidget {
   const AuthPage({Key? key}) : super(key: key);
@@ -93,44 +92,6 @@ class AuthPage extends StatelessWidget {
                             context,
                             MaterialPageRoute(
                               builder: (context) => EmailSignUpPage(),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    // ログアウト
-                    Container(
-                      width: 300,
-                      margin: const EdgeInsets.all(10),
-                      child: ElevatedButton(
-                        child: const Text(
-                          'ログアウト',
-                          style: TextStyle(color: Colors.black),
-                        ),
-                        onPressed: () async {
-                          await authVM.signOut();
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => AuthPage(),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    Container(
-                      width: 300,
-                      margin: const EdgeInsets.all(10),
-                      child: ElevatedButton(
-                        child: const Text(
-                          'ユーザー作成profile一覧',
-                          style: TextStyle(color: Colors.black),
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => UserCreateListScreen(),
                             ),
                           );
                         },

@@ -19,8 +19,8 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     final UserModel? user = authViewModel.currentUser;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ユーザー詳細'),
-        // 自動で戻るボタンを表示
+        title: const Text('ユーザー詳細(User Details)'),
+        // 自動で戻るボタンを表示(Automatically display back button)
         automaticallyImplyLeading: true,
       ),
       body: SafeArea(
@@ -64,16 +64,16 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                                 .snapshots(),
                             builder: (context, snapshot) {
                               if (snapshot.hasError) {
-                                return const Text('エラーが発生しました');
+                                return const Text('エラーが発生しました(Error occurred)');
                               }
                               if (snapshot.connectionState ==
                                   ConnectionState.waiting) {
-                                return const Text('読み込み中...');
+                                return const Text('読み込み中...(Loading...)');
                               }
                               final docs = snapshot.data?.docs ?? [];
                               final playerLevel = docs.length;
                               return Text(
-                                'キャラ愛Lv.$playerLevel',
+                                'ユーザーLv.$playerLevel(User Lv.$playerLevel)',
                                 style: const TextStyle(fontSize: 16),
                               );
                             },
@@ -88,12 +88,12 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                       physics: const NeverScrollableScrollPhysics(),
                       children: [
                         ListTile(
-                          title: const Text('Email'),
-                          subtitle: Text(user.email ?? 'No email provided'),
+                          title: const Text('Email(メールアドレス)'),
+                          subtitle: Text(user.email ?? 'No email provided(メールアドレス未提供)'),
                         ),
                         ListTile(
-                          title: const Text('UID'),
-                          subtitle: Text(user.uid ?? 'No uid'),
+                          title: const Text('UID(ユーザーID)'),
+                          subtitle: Text(user.uid ?? 'No uid(ユーザーID未提供)'),
                         ),
                       ],
                     ),
@@ -109,7 +109,7 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                               builder: (context) => UserProfileEditPage()),
                         );
                       },
-                      child: const Text('お気に入り画面へ'),
+                      child: const Text('プロフィール編集(Edit Profile)'),
                     ),
                   ],
                 ),
@@ -118,13 +118,13 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text('ユーザーがログインしていません'),
+                    const Text('ユーザーがログインしていません(User not logged in)'),
                     const SizedBox(height: 20),
                     ElevatedButton(
                       onPressed: () {
                         Navigator.pushNamed(context, '/login');
                       },
-                      child: const Text('ログイン画面へ'),
+                      child: const Text('ログイン画面へ(To Login Screen)'),
                     ),
                   ],
                 ),

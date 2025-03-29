@@ -7,8 +7,9 @@ import 'package:apusion/ui/auth/view/auth_page.dart';
 import 'package:apusion/ui/user/user_proflile_page.dart';
 import 'package:apusion/ui/favorite/favorite_page.dart';
 import 'package:apusion/ui/home/ProfileListScreen.dart';
-import 'package:apusion/ui/user/user_create_list_page.dart';
 import 'package:apusion/ui/user/user_detail_page.dart';
+import 'package:apusion/ui/home/home_page.dart'; // これが必要
+
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({Key? key}) : super(key: key);
@@ -20,17 +21,17 @@ class UserProfileScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('プロフィール'),
+        title: const Text('プロフィール(Profile)'),
         centerTitle: true,
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Color(0xFFE1BEE7), Color(0xFFF8BBD0)], // 薄い紫から薄いピンク
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
+  decoration: BoxDecoration(
+    gradient: LinearGradient(
+      colors: [Colors.green.shade800, Colors.green.shade600], // 濃い緑色のグラデーション(dark green gradient)
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+    ),
+  ),
         child: SafeArea(
           child: user != null
               ? Padding(
@@ -38,7 +39,7 @@ class UserProfileScreen extends StatelessWidget {
                   child: ListView(
                     children: [
                       const SizedBox(height: 24),
-                      // 丸いアイコン（アバター）
+                      // 丸いアイコン（アバター）(Circular icon (avatar))
                       Center(
                         child: CircleAvatar(
                           radius: 50,
@@ -53,7 +54,7 @@ class UserProfileScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      // ユーザー名 & キャラ愛Lv.
+                      // ユーザー名(User name)
                       Center(
                         child: Column(
                           children: [
@@ -63,30 +64,6 @@ class UserProfileScreen extends StatelessWidget {
                                 fontSize: 24,
                                 fontWeight: FontWeight.bold,
                               ),
-                            ),
-                            const SizedBox(height: 4),
-                            // StreamBuilderを使ってドキュメント数を表示
-                            StreamBuilder<QuerySnapshot<Map<String, dynamic>>>( 
-                              stream: FirebaseFirestore.instance
-                                  .collection('users')
-                                  .doc(user.uid!)
-                                  .collection('createdProfiles')
-                                  .snapshots(),
-                              builder: (context, snapshot) {
-                                if (snapshot.hasError) {
-                                  return const Text('エラーが発生しました');
-                                }
-                                if (snapshot.connectionState ==
-                                    ConnectionState.waiting) {
-                                  return const Text('読み込み中...');
-                                }
-                                final docs = snapshot.data?.docs ?? [];
-                                final playerLevel = docs.length;
-                                return Text(
-                                  'キャラ愛Lv.$playerLevel',
-                                  style: const TextStyle(fontSize: 16),
-                                );
-                              },
                             ),
                           ],
                         ),
@@ -105,22 +82,7 @@ class UserProfileScreen extends StatelessWidget {
                                 builder: (context) => UserDetailScreen()),
                           );
                         },
-                        child: const Text('ユーザー情報'),
-                      ),
-                      const SizedBox(height: 12),
-                      ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size.fromHeight(48),
-                          foregroundColor: Colors.black,
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) => UserCreateListScreen()),
-                          );
-                        },
-                        child: const Text('作成したぷろふぃーる一覧'),
+                        child: const Text('ユーザー情報(User Details)'),
                       ),
                       const SizedBox(height: 12),
                       ElevatedButton(
@@ -135,10 +97,8 @@ class UserProfileScreen extends StatelessWidget {
                                 builder: (context) => FavoriteScreen()),
                           );
                         },
-                        child: const Text('いいねしたぷろふぃーる一覧'),
+                        child: const Text('いいねした商品一覧(Favorite Items List)'),
                       ),
-                      const SizedBox(height: 12),
-                      // 画像生成に関するボタンを削除
                       const SizedBox(height: 12),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
@@ -146,11 +106,16 @@ class UserProfileScreen extends StatelessWidget {
                           minimumSize: const Size.fromHeight(48),
                           foregroundColor: Colors.black,
                         ),
-                        onPressed: () {
+                        onPressed: () async {
                           // ログアウト処理
-                          authViewModel.signOut();
-                        },
-                        child: const Text('ログアウト'),
+                          await authViewModel.signOut();
+                          // HomeScreenに遷移
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(builder: (context) => MainScreen()),
+                            );
+                          },
+                        child: const Text('ログアウト(Logout)'),
                       ),
                     ],
                   ),
@@ -159,7 +124,7 @@ class UserProfileScreen extends StatelessWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Text('ユーザーがログインしていません'),
+                      const Text('ユーザーがログインしていません(User is not logged in)'),
                       const SizedBox(height: 20),
                       ElevatedButton(
                         onPressed: () {
@@ -168,7 +133,7 @@ class UserProfileScreen extends StatelessWidget {
                         style: ElevatedButton.styleFrom(
                           foregroundColor: Colors.black,
                         ),
-                        child: const Text('ログイン画面へ'),
+                        child: const Text('ログイン画面へ(To Login Screen)'),
                       ),
                     ],
                   ),

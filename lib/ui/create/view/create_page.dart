@@ -4,6 +4,7 @@ import 'package:apusion/ui/create/view_model/create_view_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'agreement.dart';  // 同意書の内容をインポート
 
 class CreateScreen extends StatelessWidget {
   final String? profileId;
@@ -31,114 +32,156 @@ class CreateScreen extends StatelessWidget {
         return viewModel;
       },
       child: Scaffold(
-        appBar: AppBar(title: Text(profileId != null ? "商品編集" : "商品作成")),
-        body: Consumer<CreateScreenViewModel>(
-          builder: (context, viewModel, child) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+        appBar: AppBar(title: Text(profileId != null ? "商品編集(Edit Product)" : "商品作成(Create Product)")),
+        body: Consumer<CreateScreenViewModel>(builder: (context, viewModel, child) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextField(
+                  controller: viewModel.nameController,
+                  decoration: InputDecoration(labelText: "商品名(Product Name)"),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: viewModel.descriptionController,
+                  decoration: InputDecoration(labelText: "商品説明(Product Description)"),
+                ),
+                const SizedBox(height: 20),
+                if (isAdmin)
                   TextField(
-                    controller: viewModel.nameController,
-                    decoration: InputDecoration(labelText: "商品名"),
+                    controller: viewModel.priceController,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(labelText: "価格(Price)"),
                   ),
-                  const SizedBox(height: 20),
-                  TextField(
-                    controller: viewModel.descriptionController,
-                    decoration: InputDecoration(labelText: "商品説明"),
-                  ),
-                  const SizedBox(height: 20),
-                  if (isAdmin)
-                    TextField(
-                      controller: viewModel.priceController,
-                      keyboardType: TextInputType.number,
-                      decoration: InputDecoration(labelText: "価格"),
-                    ),
-                  const SizedBox(height: 20),
+                const SizedBox(height: 20),
+                DropdownButtonFormField<String>(
+                  value: viewModel.selectedCategory,
+                  items: ['電子レンジ(microwave oven)', '冷蔵庫(refrigerator)', '洗濯機(washing machine)'].map((category) {
+                    return DropdownMenuItem(value: category, child: Text(category));
+                  }).toList(),
+                  onChanged: (value) => viewModel.selectedCategory = value!,
+                  decoration: InputDecoration(labelText: "カテゴリ(Category)"),
+                ),
+                const SizedBox(height: 20),
+                Wrap(
+                  children: viewModel.imageUrls.map((imageUrl) {
+                    return Padding(
+                      padding: const EdgeInsets.all(4.0),
+                      child: Image.network(imageUrl, width: 80, height: 80),
+                    );
+                  }).toList(),
+                ),
+                ElevatedButton(
+                  onPressed: () => _pickImages(viewModel),
+                  child: const Text('画像を選択（最大5枚）(Select Images, Max 5)'),
+                ),
+                const SizedBox(height: 20),
+
+                if (isAdmin)
                   DropdownButtonFormField<String>(
-                    value: viewModel.selectedCategory,
-                    items: ['電子レンジ', '冷蔵庫', '洗濯機'].map((category) {
-                      return DropdownMenuItem(value: category, child: Text(category));
+                    value: viewModel.storeController.text.isNotEmpty
+                        ? viewModel.storeController.text
+                        : '本店',
+                    items: ['本店'].map((store) {
+                      return DropdownMenuItem(value: store, child: Text(store));
                     }).toList(),
-                    onChanged: (value) => viewModel.selectedCategory = value!,
-                    decoration: InputDecoration(labelText: "カテゴリ"),
-                  ),
-                  const SizedBox(height: 20),
-                  Wrap(
-                    children: viewModel.imageUrls.map((imageUrl) {
-                      return Padding(
-                        padding: const EdgeInsets.all(4.0),
-                        child: Image.network(imageUrl, width: 80, height: 80),
-                      );
-                    }).toList(),
-                  ),
-                  ElevatedButton(
-                    onPressed: () => _pickImages(viewModel),
-                    child: const Text('画像を選択（最大5枚）'),
-                  ),
-                  const SizedBox(height: 20),
-
-                  // 一般ユーザーと運営で異なるフィールド
-                  if (isAdmin)
-                    DropdownButtonFormField<String>(
-                      value: viewModel.storeController.text.isNotEmpty
-                          ? viewModel.storeController.text
-                          : '本店',
-                      items: ['本店'].map((store) {
-                        return DropdownMenuItem(value: store, child: Text(store));
-                      }).toList(),
-                      onChanged: (value) {
-                        viewModel.storeController.text = value!;
-                      },
-                      decoration: InputDecoration(labelText: "取り扱い店舗"),
-                    )
-                  else
-                    Column(
-                      children: [
-                        TextField(
-                          controller: viewModel.visitDateController,
-                          decoration: InputDecoration(labelText: "来店予定日"),
+                    onChanged: (value) {
+                      viewModel.storeController.text = value!;
+                    },
+                    decoration: InputDecoration(labelText: "取り扱い店舗(Store)"),
+                  )
+                else
+                  Column(
+                    children: [
+                      TextFormField(
+                        controller: viewModel.visitDateController,
+                        decoration: InputDecoration(
+                          labelText: "来店予定日(Visit Date)",
+                          suffixIcon: GestureDetector(
+                            onTap: () async {
+                              DateTime? selectedDate = await showDatePicker(
+                                context: context,
+                                initialDate: DateTime.now(),
+                                firstDate: DateTime.now(),
+                                lastDate: DateTime(2101),
+                              );
+                              if (selectedDate != null) {
+                                viewModel.visitDateController.text = "${selectedDate.toLocal()}".split(' ')[0];
+                              }
+                            },
+                            child: Icon(Icons.calendar_today),
+                          ),
                         ),
-                        const SizedBox(height: 20),
-                        DropdownButtonFormField<String>(
-                          value: viewModel.storeController.text.isNotEmpty
-                              ? viewModel.storeController.text
-                              : '本店',
-                          items: ['本店'].map((store) {
-                            return DropdownMenuItem(value: store, child: Text(store));
-                          }).toList(),
-                          onChanged: (value) {
-                            viewModel.storeController.text = value!;
-                          },
-                          decoration: InputDecoration(labelText: "来店店舗"),
-                        ),
-                      ],
-                    ),
-                  const SizedBox(height: 20),
+                        readOnly: true,
+                      ),
+                      const SizedBox(height: 20),
+                      DropdownButtonFormField<String>(
+                        value: viewModel.storeController.text.isNotEmpty
+                            ? viewModel.storeController.text
+                            : '本店',
+                        items: ['本店'].map((store) {
+                          return DropdownMenuItem(value: store, child: Text(store));
+                        }).toList(),
+                        onChanged: (value) {
+                          viewModel.storeController.text = value!;
+                        },
+                        decoration: InputDecoration(labelText: "来店店舗(Visit Store)"),
+                      ),
+                    ],
+                  ),
+                const SizedBox(height: 20),
 
-                  Center(
-                    child: ElevatedButton(
+                Row(
+                  children: [
+                    ElevatedButton(
                       onPressed: () {
-                        if (profileId == null) {
-                          viewModel.submitProfile(context, isAdmin);
-                        } else {
-                          viewModel.updateProfile(context, profileId!, isAdmin);
-                        }
+                        _showAgreementDialog(context);
                       },
-                      child: const Text("決定！"),
+                      child: const Text("同意書を見る(View Agreement)"),
                     ),
+                    const SizedBox(width: 20),
+                    Checkbox(
+                      value: viewModel.isAgreementChecked,
+                      onChanged: (bool? value) {
+                        viewModel.toggleAgreementChecked(value!);
+                      },
+                    ),
+                    const Text("同意する(Agree)"),
+                  ],
+                ),
+                const SizedBox(height: 20),
+
+                Center(
+                  child: ElevatedButton(
+                    onPressed: viewModel.isAgreementChecked
+                        ? () {
+                            if (profileId == null) {
+                              viewModel.submitProfile(context, isAdmin);  // 🔹 ここを修正
+                            } else {
+                              viewModel.updateProfile(context, profileId!, isAdmin);  // 🔹 ここを修正
+                            }
+                          }
+                        : null,
+                    child: const Text("決定！(Submit)"),
                   ),
-                ],
-              ),
-            );
-          },
-        ),
+                ),
+              ],
+            ),
+          );
+        }),
       ),
     );
   }
 
   Future<void> _pickImages(CreateScreenViewModel viewModel) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      debugPrint("エラー: ユーザーが認証されていません");
+      return;
+    }
+
     final result = await FilePicker.platform.pickFiles(
       type: FileType.image,
       allowMultiple: true,
@@ -146,12 +189,39 @@ class CreateScreen extends StatelessWidget {
     if (result == null) return;
 
     for (var file in result.files.take(5)) {
-      final storageRef = FirebaseStorage.instance.ref().child('uploads/${file.name}');
-      final uploadTask = storageRef.putData(file.bytes!);
-      await uploadTask.whenComplete(() async {
-        final downloadUrl = await storageRef.getDownloadURL();
-        viewModel.addImageUrl(downloadUrl);
-      });
+      final storageRef = FirebaseStorage.instance.ref().child('uploads/${user.uid}/${file.name}');
+      try {
+        final uploadTask = storageRef.putData(file.bytes!);
+        await uploadTask.whenComplete(() async {
+          final downloadUrl = await storageRef.getDownloadURL();
+          viewModel.addImageUrl(downloadUrl);
+          debugPrint("画像のアップロードが成功しました: $downloadUrl");
+        });
+      } catch (e) {
+        debugPrint("アップロードエラー: $e");
+      }
     }
+  }
+
+  void _showAgreementDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("売買契約書(Sales Agreement)"),
+          content: SingleChildScrollView(
+            child: Text(agreementContent),
+          ),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text("閉じる(Close)"),
+            ),
+          ],
+        );
+      },
+    );
   }
 }

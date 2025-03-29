@@ -61,9 +61,9 @@ class _MainScreenState extends State<MainScreen> {
     ];
 
     final userNavItems = const [
-      BottomNavigationBarItem(icon: Icon(Icons.home), label: 'ホーム'),
-      BottomNavigationBarItem(icon: Icon(Icons.store), label: 'ショップ'),
-      BottomNavigationBarItem(icon: Icon(Icons.person), label: 'ユーザー'),
+      BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+      BottomNavigationBarItem(icon: Icon(Icons.store), label: 'Shop'),
+      BottomNavigationBarItem(icon: Icon(Icons.person), label: 'User'),
     ];
 
     return Scaffold(
