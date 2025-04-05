@@ -1,11 +1,11 @@
 {
-    "name": "my_flutter_app",
-    "short_name": "my_flutter_app",
+    "name": "apushion",
+    "short_name": "apushion",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
     "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "description": "繋がる家電リユースで未来を創る!! in APU",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

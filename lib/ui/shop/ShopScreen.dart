@@ -174,6 +174,7 @@ class _ShopScreenState extends State<ShopScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text("来店予定日(Scheduled visit date): ${visit['visitDate']}"),
+                              Text("受け取り方法(Pickup Method): ${visit['pickupMethod'] ?? '未設定(Unset)'}"), // 受け取り方法を表示
                               if (isAdmin) Text("ユーザー(UserName): ${visit['userName']}"),
                             ],
                           ),

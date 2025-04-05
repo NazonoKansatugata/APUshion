@@ -17,6 +17,9 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _photoURLController;
+  late TextEditingController _fullNameController;
+  late TextEditingController _addressController;
+  late TextEditingController _phoneController;
 
   @override
   void initState() {
@@ -27,12 +30,18 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
 
     _nameController = TextEditingController(text: user?.name ?? '');
     _photoURLController = TextEditingController(text: user?.photoURL ?? '');
+    _fullNameController = TextEditingController(text: user?.fullName ?? '');
+    _addressController = TextEditingController(text: user?.address ?? '');
+    _phoneController = TextEditingController(text: user?.phoneNumber ?? '');
   }
 
   @override
   void dispose() {
     _nameController.dispose();
     _photoURLController.dispose();
+    _fullNameController.dispose();
+    _addressController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -117,6 +126,32 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
                           return null;
                         },
                       ),
+
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: _fullNameController,
+                        decoration: const InputDecoration(
+                          labelText: '本名（Full Name）',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: _addressController,
+                        decoration: const InputDecoration(
+                          labelText: '住所（Address）',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      TextFormField(
+                        controller: _phoneController,
+                        decoration: const InputDecoration(
+                          labelText: '電話番号（Phone Number）',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+
                       const SizedBox(height: 20),
                       TextField(
                         controller: _photoURLController,
@@ -138,10 +173,16 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
                           if (_formKey.currentState!.validate()) {
                             final newName = _nameController.text.trim();
                             final newPhotoURL = _photoURLController.text.trim();
+                            final newFullName = _fullNameController.text.trim();
+                            final newAddress = _addressController.text.trim();
+                            final newPhone = _phoneController.text.trim();
                             try {
                               await authViewModel.updateUserProfile(
                                 name: newName,
                                 photoURL: newPhotoURL,
+                                fullName: newFullName,
+                                address: newAddress,
+                                phoneNumber: newPhone,
                               );
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('プロフィールを更新しました')),

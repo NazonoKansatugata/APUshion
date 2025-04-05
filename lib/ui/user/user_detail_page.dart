@@ -20,7 +20,6 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('ユーザー詳細(User Details)'),
-        // 自動で戻るボタンを表示(Automatically display back button)
         automaticallyImplyLeading: true,
       ),
       body: SafeArea(
@@ -44,56 +43,40 @@ class _UserDetailScreenState extends State<UserDetailScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-                    // ユーザー名とキャラ愛Lv.
+                    // ユーザー名表示のみ（キャラ愛Lv.削除）
                     Center(
-                      child: Column(
-                        children: [
-                          Text(
-                            user.name,
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                            stream: FirebaseFirestore.instance
-                                .collection('users')
-                                .doc(user.uid!)
-                                .collection('createdProfiles')
-                                .snapshots(),
-                            builder: (context, snapshot) {
-                              if (snapshot.hasError) {
-                                return const Text('エラーが発生しました(Error occurred)');
-                              }
-                              if (snapshot.connectionState ==
-                                  ConnectionState.waiting) {
-                                return const Text('読み込み中...(Loading...)');
-                              }
-                              final docs = snapshot.data?.docs ?? [];
-                              final playerLevel = docs.length;
-                              return Text(
-                                'ユーザーLv.$playerLevel(User Lv.$playerLevel)',
-                                style: const TextStyle(fontSize: 16),
-                              );
-                            },
-                          ),
-                        ],
+                      child: Text(
+                        user.name,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 32),
-                    // 内側の ListView を shrinkWrap と NeverScrollableScrollPhysics で修正
                     ListView(
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       children: [
                         ListTile(
                           title: const Text('Email(メールアドレス)'),
-                          subtitle: Text(user.email ?? 'No email provided(メールアドレス未提供)'),
+                          subtitle: Text(user.email ?? 'メールアドレス未提供'),
                         ),
                         ListTile(
                           title: const Text('UID(ユーザーID)'),
-                          subtitle: Text(user.uid ?? 'No uid(ユーザーID未提供)'),
+                          subtitle: Text(user.uid ?? 'ユーザーID未提供'),
+                        ),
+                        ListTile(
+                          title: const Text('本名(Full Name)'),
+                          subtitle: Text(user.fullName ?? '未設定'),
+                        ),
+                        ListTile(
+                          title: const Text('住所(Address)'),
+                          subtitle: Text(user.address ?? '未設定'),
+                        ),
+                        ListTile(
+                          title: const Text('電話番号(Phone Number)'),
+                          subtitle: Text(user.phoneNumber ?? '未設定'),
                         ),
                       ],
                     ),
