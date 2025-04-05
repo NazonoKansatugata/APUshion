@@ -95,58 +95,44 @@ class CreateScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
-                if (isAdmin)
-                  DropdownButtonFormField<String>(
-                    value: viewModel.storeController.text.isNotEmpty
-                        ? viewModel.storeController.text
-                        : '本店',
-                    items: ['本店'].map((store) {
-                      return DropdownMenuItem(value: store, child: Text(store));
-                    }).toList(),
-                    onChanged: (value) {
-                      viewModel.storeController.text = value!;
-                    },
-                    decoration: InputDecoration(labelText: "取り扱い店舗(Store)"),
-                  )
-                else
-                  Column(
-                    children: [
-                      TextFormField(
-                        controller: viewModel.visitDateController,
-                        decoration: InputDecoration(
-                          labelText: "来店予定日(Visit Date)",
-                          suffixIcon: GestureDetector(
-                            onTap: () async {
-                              DateTime? selectedDate = await showDatePicker(
-                                context: context,
-                                initialDate: DateTime.now(),
-                                firstDate: DateTime.now(),
-                                lastDate: DateTime(2101),
-                              );
-                              if (selectedDate != null) {
-                                viewModel.visitDateController.text = "${selectedDate.toLocal()}".split(' ')[0];
-                              }
-                            },
-                            child: Icon(Icons.calendar_today),
-                          ),
+                Column(
+                  children: [
+                    TextFormField(
+                      controller: viewModel.visitDateController,
+                      decoration: InputDecoration(
+                        labelText: "来店予定日(Visit Date)",
+                        suffixIcon: GestureDetector(
+                          onTap: () async {
+                            DateTime? selectedDate = await showDatePicker(
+                              context: context,
+                              initialDate: DateTime.now(),
+                              firstDate: DateTime.now(),
+                              lastDate: DateTime(2101),
+                            );
+                            if (selectedDate != null) {
+                              viewModel.visitDateController.text = "${selectedDate.toLocal()}".split(' ')[0];
+                            }
+                          },
+                          child: Icon(Icons.calendar_today),
                         ),
-                        readOnly: true,
                       ),
-                      const SizedBox(height: 20),
-                      DropdownButtonFormField<String>(
-                        value: viewModel.storeController.text.isNotEmpty
-                            ? viewModel.storeController.text
-                            : '本店',
-                        items: ['本店'].map((store) {
-                          return DropdownMenuItem(value: store, child: Text(store));
-                        }).toList(),
-                        onChanged: (value) {
-                          viewModel.storeController.text = value!;
-                        },
-                        decoration: InputDecoration(labelText: "来店店舗(Visit Store)"),
-                      ),
-                    ],
-                  ),
+                      readOnly: true,
+                    ),
+                    const SizedBox(height: 20),
+                    DropdownButtonFormField<String>(
+                      value: viewModel.storeController.text.isNotEmpty
+                          ? viewModel.storeController.text
+                          : '本店',
+                      items: ['本店'].map((store) {
+                        return DropdownMenuItem(value: store, child: Text(store));
+                      }).toList(),
+                      onChanged: (value) {
+                        viewModel.storeController.text = value!;
+                      },
+                      decoration: InputDecoration(labelText: isAdmin ? "取り扱い店舗(Store)" : "来店店舗(Visit Store)"),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 20),
 
                 Row(
@@ -176,9 +162,9 @@ class CreateScreen extends StatelessWidget {
                                viewModel.nameController.text.isNotEmpty
                         ? () {
                             if (profileId == null) {
-                              viewModel.submitProfile(context, isAdmin);  // 🔹 ここを修正
+                              viewModel.submitProfile(context, isAdmin);
                             } else {
-                              viewModel.updateProfile(context, profileId!, isAdmin);  // 🔹 ここを修正
+                              viewModel.updateProfile(context, profileId!, isAdmin);
                             }
                           }
                         : null,
@@ -215,7 +201,7 @@ class CreateScreen extends StatelessWidget {
                           await viewModel.deleteProfile(context, profileId!);
                         }
                       },
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red), // 修正: primary -> backgroundColor
+                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
                       child: const Text("削除(Delete)"),
                     ),
                   ),

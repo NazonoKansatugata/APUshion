@@ -3,22 +3,19 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:apusion/model/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-/// 認証まわりの状態や処理をまとめる。
+
 class AuthViewModel extends ChangeNotifier {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
-  // 現在ログイン中のユーザーを表す (nullの場合は未ログイン)
   UserModel? currentUser;
 
-  // 運営ユーザーID
+
   static const String adminUid = '0jbF0jcGAaeWyOiZ75LzFbmfQK22';
 
-  /// 運営判定メソッド
   bool isAdmin() {
     return currentUser != null && currentUser!.uid == adminUid;
   }
 
-  /// メールアドレスでログイン
   Future<void> signInWithEmail(String email, String password) async {
     try {
       final userCredential = await _firebaseAuth.signInWithEmailAndPassword(
@@ -27,7 +24,7 @@ class AuthViewModel extends ChangeNotifier {
       );
       final user = userCredential.user;
       if (user != null) {
-        currentUser = _convertToUserModel(user);
+        currentUser = await _convertToUserModel(user);
         await storeUserProfile(currentUser!);
         debugPrint("メールログイン成功: ${currentUser!.toJson()}");
       }
@@ -47,7 +44,7 @@ class AuthViewModel extends ChangeNotifier {
       );
       final user = userCredential.user;
       if (user != null) {
-        currentUser = _convertToUserModel(user);
+        currentUser = await _convertToUserModel(user);
         await storeUserProfile(currentUser!);
         debugPrint("メールでアカウント作成成功: ${currentUser!.toJson()}");
       }
@@ -69,7 +66,7 @@ class AuthViewModel extends ChangeNotifier {
   Future<void> fetchUser() async {
     final user = _firebaseAuth.currentUser;
     if (user != null) {
-      currentUser = _convertToUserModel(user);
+      currentUser = await _convertToUserModel(user);
       debugPrint("ユーザー情報取得: ${currentUser!.toJson()}");
     }
     notifyListeners();
@@ -100,18 +97,23 @@ class AuthViewModel extends ChangeNotifier {
     debugPrint("$email へパスワードリセット用のメールを送信しました");
   }
 
-  /// FirebaseのUser情報をUserModelに変換するヘルパー
-  UserModel _convertToUserModel(User user) {
+  /// FirebaseのUser情報をUserModelに変換し、Firestoreの追加プロフィール情報もマージ
+  Future<UserModel> _convertToUserModel(User user) async {
+    final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+    final firestoreData = doc.data();
+
     return UserModel(
-      name: user.displayName ?? 'No Name',
+      name: user.displayName ?? firestoreData?['name'] ?? 'No Name',
       email: user.email,
       isEmailVerified: user.emailVerified,
       isAnonymous: user.isAnonymous,
-      phoneNumber: user.phoneNumber,
-      photoURL: user.photoURL,
+      phoneNumber: firestoreData?['phoneNumber'] ?? user.phoneNumber,
+      photoURL: user.photoURL ?? firestoreData?['photoURL'],
       refreshToken: user.refreshToken,
       tenantId: user.tenantId,
       uid: user.uid,
+      fullName: firestoreData?['fullName'],
+      address: firestoreData?['address'],
     );
   }
 
