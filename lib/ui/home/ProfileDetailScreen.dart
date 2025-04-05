@@ -82,6 +82,7 @@ Widget _purchaseDialog() {
   final TextEditingController visitDateController = TextEditingController();
   DateTime? pickedDate;
   bool isAgreementChecked = false; // チェックボックスの状態を管理
+  String selectedPickupMethod = '店舗受け取り(Store Pickup)'; // 受け取り方法の初期値
 
   return StatefulBuilder(
     builder: (context, setState) {
@@ -120,6 +121,26 @@ Widget _purchaseDialog() {
                 },
                 child: Text('カレンダーで選択(Select from Calendar)'),
               ),
+              DropdownButtonFormField<String>(
+                value: selectedPickupMethod,
+                items: [
+                  DropdownMenuItem(
+                    value: '店舗受け取り(Store Pickup)',
+                    child: Text('店舗受け取り(Store Pickup)'),
+                  ),
+                  DropdownMenuItem(
+                    value: '配送(Delivery)',
+                    child: Text('配送(Delivery)'),
+                  ),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    selectedPickupMethod = value!;
+                  });
+                },
+                decoration: const InputDecoration(labelText: '受け取り方法(Pickup Method)'),
+              ),
+              SizedBox(height: 10),
               // 契約書表示ボタン
               ElevatedButton(
                 onPressed: () {
@@ -194,6 +215,7 @@ Widget _purchaseDialog() {
                   'product': profileData?['name'] ?? '商品名なし(Product name not available)',
                   'productId': widget.documentId,
                   'visitType': 'purchase',
+                  'pickupMethod': selectedPickupMethod, // 受け取り方法を追加
                   'createdAt': Timestamp.now(),
                 });
 

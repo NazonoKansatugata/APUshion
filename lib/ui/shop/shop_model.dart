@@ -8,6 +8,7 @@ class ShopVisit {
   String visitDate;
   String store;
   String visitType;
+  String pickupMethod; // 受け取り方法を追加
   Timestamp createdAt;
 
   ShopVisit({
@@ -18,6 +19,7 @@ class ShopVisit {
     required this.visitDate,
     required this.store,
     required this.visitType,
+    required this.pickupMethod, // コンストラクタに追加
     required this.createdAt,
   });
 
@@ -32,6 +34,7 @@ class ShopVisit {
       visitDate: data['visitDate'] ?? '未設定(Unset)',
       store: data['store'] ?? '未設定(Unset)',
       visitType: data['visitType'] ?? '不明(Unknown)',
+      pickupMethod: data['pickupMethod'] ?? '未設定(Unset)', // 受け取り方法を追加
       createdAt: data['createdAt'] ?? Timestamp.now(),
     );
   }
@@ -45,6 +48,7 @@ class ShopVisit {
       'visitDate': visitDate,
       'store': store,
       'visitType': visitType,
+      'pickupMethod': pickupMethod, // 受け取り方法を追加
       'createdAt': createdAt,
     };
   }
