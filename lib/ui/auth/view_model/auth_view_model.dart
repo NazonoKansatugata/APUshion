@@ -117,36 +117,48 @@ class AuthViewModel extends ChangeNotifier {
 
   /// ユーザーのプロフィール情報（name, photoURL）を更新する処理
   Future<void> updateUserProfile({
-    String? name,
-    String? photoURL,
-  }) async {
-    final user = _firebaseAuth.currentUser;
-    if (user != null) {
-      if (name != null || photoURL != null) {
-        await user.updateProfile(
-          displayName: name ?? user.displayName,
-          photoURL: photoURL ?? user.photoURL,
-        );
-        await user.reload();
-      }
-
-      final userRef =
-          FirebaseFirestore.instance.collection('users').doc(user.uid);
-      final Map<String, dynamic> updatedData = {};
-      if (name != null) updatedData['name'] = name;
-      if (photoURL != null) updatedData['photoURL'] = photoURL;
-      if (updatedData.isNotEmpty) {
-        await userRef.update(updatedData);
-      }
-
-      if (currentUser != null) {
-        currentUser!.name = name ?? currentUser!.name;
-        currentUser!.photoURL = photoURL ?? currentUser!.photoURL;
-      }
-      debugPrint("ユーザープロフィールを更新しました: $updatedData");
-      notifyListeners();
-    } else {
-      debugPrint("プロフィール更新に失敗: ユーザーが存在しません。");
+  String? name,
+  String? photoURL,
+  String? fullName,
+  String? address,
+  String? phoneNumber,
+}) async {
+  final user = _firebaseAuth.currentUser;
+  if (user != null) {
+    if (name != null || photoURL != null) {
+      await user.updateProfile(
+        displayName: name ?? user.displayName,
+        photoURL: photoURL ?? user.photoURL,
+      );
+      await user.reload();
     }
+
+    final userRef =
+        FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final Map<String, dynamic> updatedData = {};
+    if (name != null) updatedData['name'] = name;
+    if (photoURL != null) updatedData['photoURL'] = photoURL;
+    if (fullName != null) updatedData['fullName'] = fullName;
+    if (address != null) updatedData['address'] = address;
+    if (phoneNumber != null) updatedData['phoneNumber'] = phoneNumber;
+
+    if (updatedData.isNotEmpty) {
+      await userRef.update(updatedData);
+    }
+
+    // currentUser にも反映（nullチェック済み）
+    if (currentUser != null) {
+      currentUser!.name = name ?? currentUser!.name;
+      currentUser!.photoURL = photoURL ?? currentUser!.photoURL;
+      currentUser!.fullName = fullName ?? currentUser!.fullName;
+      currentUser!.address = address ?? currentUser!.address;
+      currentUser!.phoneNumber = phoneNumber ?? currentUser!.phoneNumber;
+    }
+
+    debugPrint("ユーザープロフィールを更新しました: $updatedData");
+    notifyListeners();
+  } else {
+    debugPrint("プロフィール更新に失敗: ユーザーが存在しません。");
   }
+}
 }
