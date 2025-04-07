@@ -249,7 +249,7 @@ Widget _purchaseDialog() {
                 );
               }
             },
-            child: const Text('購入(Purchase)'),
+            child: const Text('購入を確定(Purchase)'),
           ),
         ],
       );
