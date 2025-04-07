@@ -87,20 +87,52 @@ Widget _purchaseDialog() {
   return StatefulBuilder(
     builder: (context, setState) {
       return AlertDialog(
-        title: const Text('来店予定日を入力(Purchase Date)'),
+        title: Text('購入手続き(Purchase Process)'),
         content: Form(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              DropdownButtonFormField<String>(
+                value: selectedPickupMethod,
+                items: [
+                  DropdownMenuItem(
+                    value: '店舗受け取り(Store Pickup)',
+                    child: Text('店舗受け取り(Store Pickup)'),
+                  ),
+                  DropdownMenuItem(
+                    value: '配送(Delivery)',
+                    child: Text('配送(Delivery)'),
+                  ),
+                ],
+                onChanged: (value) {
+                  setState(() {
+                    selectedPickupMethod = value!;
+                  });
+                },
+                decoration: const InputDecoration(labelText: '受け取り方法(Pickup Method)'),
+              ),
+              if (selectedPickupMethod == '配送(Delivery)')
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Text(
+                    '配送には500~1000円の送料がかかります(Delivery incurs a shipping fee of ¥500~¥1000)',
+                    style: TextStyle(color: Colors.red, fontSize: 14),
+                  ),
+                ),
+              SizedBox(height: 10),
               TextFormField(
                 controller: visitDateController,
-                decoration: const InputDecoration(
-                  hintText: '例: 2024-01-01',
+                decoration: InputDecoration(
+                  hintText: selectedPickupMethod == '配送(Delivery)'
+                      ? '例: 2024-01-01 (希望到着日)'
+                      : '例: 2024-01-01 (来店予定日)',
                 ),
                 readOnly: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return '来店予定日を選択してください(Please select a visit date)';
+                    return selectedPickupMethod == '配送(Delivery)'
+                        ? '希望到着日を選択してください(Please select a desired delivery date)'
+                        : '来店予定日を選択してください(Please select a visit date)';
                   }
                   return null;
                 },
@@ -121,27 +153,6 @@ Widget _purchaseDialog() {
                 },
                 child: Text('カレンダーで選択(Select from Calendar)'),
               ),
-              DropdownButtonFormField<String>(
-                value: selectedPickupMethod,
-                items: [
-                  DropdownMenuItem(
-                    value: '店舗受け取り(Store Pickup)',
-                    child: Text('店舗受け取り(Store Pickup)'),
-                  ),
-                  DropdownMenuItem(
-                    value: '配送(Delivery)',
-                    child: Text('配送(Delivery)'),
-                  ),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    selectedPickupMethod = value!;
-                  });
-                },
-                decoration: const InputDecoration(labelText: '受け取り方法(Pickup Method)'),
-              ),
-              SizedBox(height: 10),
-              // 契約書表示ボタン
               ElevatedButton(
                 onPressed: () {
                   showDialog(
@@ -152,7 +163,6 @@ Widget _purchaseDialog() {
                 child: Text('契約書を表示(Show Agreement)'),
               ),
               SizedBox(height: 10),
-              // チェックボックスを追加
               Row(
                 children: [
                   Checkbox(
@@ -183,12 +193,16 @@ Widget _purchaseDialog() {
             onPressed: () async {
               if (visitDateController.text.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('来店予定日を選択してください(Please select a visit date)')),
+                  SnackBar(
+                    content: Text(selectedPickupMethod == '配送(Delivery)'
+                        ? '希望到着日を選択してください(Please select a desired delivery date)'
+                        : '来店予定日を選択してください(Please select a visit date)'),
+                  ),
                 );
                 return;
               }
 
-              if (!isAgreementChecked) { // チェックボックスが選択されていない場合
+              if (!isAgreementChecked) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('契約書に同意してください(Please agree to the agreement)')),
                 );
@@ -215,7 +229,7 @@ Widget _purchaseDialog() {
                   'product': profileData?['name'] ?? '商品名なし(Product name not available)',
                   'productId': widget.documentId,
                   'visitType': 'purchase',
-                  'pickupMethod': selectedPickupMethod, // 受け取り方法を追加
+                  'pickupMethod': selectedPickupMethod,
                   'createdAt': Timestamp.now(),
                 });
 

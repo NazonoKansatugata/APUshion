@@ -119,11 +119,12 @@ class _ShopScreenState extends State<ShopScreen> {
                 stream: isAdmin
                     ? FirebaseFirestore.instance
                         .collection('shopVisits')
-                        .orderBy('createdAt', descending: true)
+                        .orderBy('visitDate') // 来店予定日が早い順に並べる
                         .snapshots()
                     : FirebaseFirestore.instance
                         .collection('shopVisits')
-                        .where('userId', isEqualTo: user.uid) // 一般ユーザーは自分の予定のみ
+                        .where('userId', isEqualTo: user.uid)
+                        .orderBy('visitDate') // 一般ユーザーも来店予定日が早い順に並べる
                         .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
