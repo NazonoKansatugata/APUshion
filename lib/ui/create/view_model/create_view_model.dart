@@ -50,9 +50,18 @@ class CreateScreenViewModel extends ChangeNotifier {
   }
 
   // 画像をアップロードするメソッド
- Future<String?> uploadImage(String imagePath) async {
+ Future<String?> uploadImage(String imagePath, BuildContext context) async {
   try {
     File file = File(imagePath);
+
+    // 画像サイズをチェック（1MB = 1,048,576バイト）
+    final int fileSize = await file.length();
+    if (fileSize > 1048576) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('画像サイズが大きすぎます(Image size is too large): $fileSize bytes')),
+      );
+      return null;
+    }
 
     // Firebase Storage にアップロード
     String fileName = 'images/${DateTime.now().millisecondsSinceEpoch}.jpg';
@@ -62,7 +71,9 @@ class CreateScreenViewModel extends ChangeNotifier {
     String downloadUrl = await uploadTask.ref.getDownloadURL();
     return downloadUrl;
   } catch (e) {
-    debugPrint('画像のアップロードに失敗しました(Failed to upload image): $e');
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('画像のアップロードに失敗しました(Failed to upload image): $e')),
+    );
     return null;
   }
 }
@@ -79,7 +90,7 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
   // 画像が選択されていればアップロード
   List<String> uploadedImageUrls = [];
   for (var i = 0; i < imageUrls.length; i++) {
-    String? url = await uploadImage(imageUrls[i]);  // 修正: 画像パスを渡す
+    String? url = await uploadImage(imageUrls[i], context);  // 修正: 画像パスを渡す
     if (url != null) {
       uploadedImageUrls.add(url);
     }

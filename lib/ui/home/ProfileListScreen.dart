@@ -30,7 +30,7 @@ class _ProfileListScreenState extends State<ProfileListScreen> {
             child: DropdownButton<String>(
               value: selectedCategory,
               dropdownColor: Colors.white,
-              items: ["すべて(All)", "電子レンジ(microwave oven)", "冷蔵庫(refrigerator)", "洗濯機(washing machine)"]
+              items: ["すべて(All)", "電子レンジ(microwave oven)", "冷蔵庫(refrigerator)", "洗濯機(washing machine)", "その他(others)"]
                   .map((category) => DropdownMenuItem(
                         value: category,
                         child: Text(category),

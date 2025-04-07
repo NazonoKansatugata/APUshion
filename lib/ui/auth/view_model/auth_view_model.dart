@@ -79,10 +79,6 @@ class AuthViewModel extends ChangeNotifier {
           FirebaseFirestore.instance.collection('users').doc(user.uid);
       await userRef.set(usermodel.toJson());
       await userRef
-          .collection('createdProfiles')
-          .doc('null')
-          .set({});
-      await userRef
           .collection('likedProfiles')
           .doc('null')
           .set({});

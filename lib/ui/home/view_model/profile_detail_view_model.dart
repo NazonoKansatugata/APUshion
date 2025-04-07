@@ -65,14 +65,6 @@ class ProfileDetailViewModel extends ChangeNotifier {
               onPressed: () async {
                 try {
                   await FirebaseFirestore.instance
-                      .collection('purchases')
-                      .doc(documentId)
-                      .set({
-                    'buyerId': currentUserId,
-                    'purchaseDate': DateTime.now(),
-                  });
-
-                  await FirebaseFirestore.instance
                       .collection('profiles')
                       .doc(documentId)
                       .update({'status': '購入済み(purchased)'});

@@ -119,11 +119,11 @@ class _ShopScreenState extends State<ShopScreen> {
                 stream: isAdmin
                     ? FirebaseFirestore.instance
                         .collection('shopVisits')
-                        .orderBy('createdAt', descending: true)
+                        .orderBy('visitDate') // 来店予定日が早い順に並べる
                         .snapshots()
                     : FirebaseFirestore.instance
                         .collection('shopVisits')
-                        .where('userId', isEqualTo: user.uid) // 一般ユーザーは自分の予定のみ
+                        .where('userId', isEqualTo: user.uid)
                         .snapshots(),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -149,6 +149,10 @@ class _ShopScreenState extends State<ShopScreen> {
                         iconData = Icons.shopping_cart;
                         color = Colors.green;
                         tag = "購入予定(Purchase)";
+                      } else if (visit['visitType'] == 'cancel') {
+                        iconData = Icons.cancel;
+                        color = Colors.red;
+                        tag = "キャンセル待ち(Cancel)";
                       } else {
                         iconData = Icons.store;
                         color = Colors.orange;

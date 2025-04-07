@@ -58,7 +58,7 @@ class CreateScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 DropdownButtonFormField<String>(
                   value: viewModel.selectedCategory,
-                  items: ['電子レンジ(microwave oven)', '冷蔵庫(refrigerator)', '洗濯機(washing machine)'].map((category) {
+                  items: ['電子レンジ(microwave oven)', '冷蔵庫(refrigerator)', '洗濯機(washing machine)', 'その他(others)'].map((category) {
                     return DropdownMenuItem(value: category, child: Text(category));
                   }).toList(),
                   onChanged: (value) => viewModel.selectedCategory = value!,
@@ -216,7 +216,9 @@ class CreateScreen extends StatelessWidget {
   Future<void> _pickImages(BuildContext context, CreateScreenViewModel viewModel) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      debugPrint("エラー: ユーザーが認証されていません");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("エラー: ユーザーが認証されていません(Error: User is not authenticated)")),
+      );
       return;
     }
 
@@ -227,6 +229,13 @@ class CreateScreen extends StatelessWidget {
     if (result == null) return;
 
     for (var file in result.files.take(5 - viewModel.imageUrls.length)) { // 最大5枚まで制限
+      if (file.bytes == null || file.bytes!.length > 1048576) { // 1MBを超える場合はスキップ
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("画像サイズが大きすぎます(Image size is too large): ${file.bytes?.length ?? 0} bytes")),
+        );
+        continue;
+      }
+
       final storageRef = FirebaseStorage.instance.ref().child('uploads/${user.uid}/${file.name}');
       try {
         final uploadTask = storageRef.putData(file.bytes!);
@@ -240,7 +249,9 @@ class CreateScreen extends StatelessWidget {
           debugPrint("画像のアップロードが成功しました: $downloadUrl");
         });
       } catch (e) {
-        debugPrint("アップロードエラー: $e");
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("画像のアップロードに失敗しました(Failed to upload image): $e")),
+        );
       }
     }
   }
