@@ -53,13 +53,13 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
   }
 
   Future<void> _checkIfPurchased() async {
-    DocumentSnapshot purchaseSnapshot = await FirebaseFirestore.instance
-        .collection('purchases')
+    DocumentSnapshot profileSnapshot = await FirebaseFirestore.instance
+        .collection('profiles')
         .doc(widget.documentId)
         .get();
 
     setState(() {
-      isPurchased = purchaseSnapshot.exists;
+      isPurchased = profileSnapshot.exists && profileSnapshot['status'] == '購入済み(Purchased)';
     });
   }
 
