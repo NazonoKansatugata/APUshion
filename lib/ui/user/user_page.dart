@@ -26,7 +26,6 @@ class _UserScreenState extends State<UserScreen> {
   Widget build(BuildContext context) {
     final authViewModel = Provider.of<AuthViewModel>(context);
     final UserModel? user = authViewModel.currentUser;
-    print('UserScreen: user=$user');
 
     // ユーザーがログインしていればUserProfileScreen、未ログインならAuthPageを表示
     return user != null ? const UserProfileScreen() : const AuthPage();
