@@ -58,7 +58,7 @@ class CreateScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 DropdownButtonFormField<String>(
                   value: viewModel.selectedCategory,
-                  items: ['電子レンジ(microwave oven)', '冷蔵庫(refrigerator)', '洗濯機(washing machine)'].map((category) {
+                  items: ['電子レンジ(microwave oven)', '冷蔵庫(refrigerator)', '洗濯機(washing machine)', 'その他(others)'].map((category) {
                     return DropdownMenuItem(value: category, child: Text(category));
                   }).toList(),
                   onChanged: (value) => viewModel.selectedCategory = value!,
