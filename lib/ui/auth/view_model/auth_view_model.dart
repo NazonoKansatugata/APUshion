@@ -26,10 +26,8 @@ class AuthViewModel extends ChangeNotifier {
       if (user != null) {
         currentUser = await _convertToUserModel(user);
         await storeUserProfile(currentUser!);
-        debugPrint("メールログイン成功: ${currentUser!.toJson()}");
       }
     } catch (e, st) {
-      debugPrint("メールログイン失敗: $e\n$st");
       rethrow;
     }
     notifyListeners();
@@ -46,10 +44,8 @@ class AuthViewModel extends ChangeNotifier {
       if (user != null) {
         currentUser = await _convertToUserModel(user);
         await storeUserProfile(currentUser!);
-        debugPrint("メールでアカウント作成成功: ${currentUser!.toJson()}");
       }
     } catch (e, st) {
-      debugPrint("メールでアカウント作成失敗: $e\n$st");
       rethrow;
     }
     notifyListeners();
@@ -59,7 +55,6 @@ class AuthViewModel extends ChangeNotifier {
   Future<void> signOut() async {
     await _firebaseAuth.signOut();
     currentUser = null;
-    debugPrint("ログアウトしました。");
     notifyListeners();
   }
 
@@ -67,7 +62,6 @@ class AuthViewModel extends ChangeNotifier {
     final user = _firebaseAuth.currentUser;
     if (user != null) {
       currentUser = await _convertToUserModel(user);
-      debugPrint("ユーザー情報取得: ${currentUser!.toJson()}");
     }
     notifyListeners();
   }
@@ -82,7 +76,6 @@ class AuthViewModel extends ChangeNotifier {
           .collection('likedProfiles')
           .doc('null')
           .set({});
-      debugPrint("ユーザー情報をFirestoreに保存しました: ${usermodel.toJson()}");
     }
     notifyListeners();
   }
@@ -90,7 +83,6 @@ class AuthViewModel extends ChangeNotifier {
   /// パスワードリセット用
   Future<void> resetPassword(String email) async {
     await _firebaseAuth.sendPasswordResetEmail(email: email);
-    debugPrint("$email へパスワードリセット用のメールを送信しました");
   }
 
   /// FirebaseのUser情報をUserModelに変換し、Firestoreの追加プロフィール情報もマージ
@@ -153,10 +145,7 @@ class AuthViewModel extends ChangeNotifier {
       currentUser!.phoneNumber = phoneNumber ?? currentUser!.phoneNumber;
     }
 
-    debugPrint("ユーザープロフィールを更新しました: $updatedData");
     notifyListeners();
-  } else {
-    debugPrint("プロフィール更新に失敗: ユーザーが存在しません。");
   }
 }
 }

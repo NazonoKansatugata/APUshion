@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'ProfileCard.dart';
 import 'ProfileListScreen.dart'; // 全商品一覧画面
-import 'package:apusion/ui/favorite/favorite_page.dart'; // お気に入り画面のインポート
+import 'package:apusion/ui/user/favorite_page.dart'; // お気に入り画面のインポート
 
 class HomeScreen extends StatelessWidget {
   @override

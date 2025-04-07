@@ -5,6 +5,7 @@ import 'package:apusion/ui/create/view/create_page.dart';
 import 'package:provider/provider.dart';
 import 'package:apusion/ui/auth/view_model/auth_view_model.dart';
 import 'agreement_text.dart';  // 同意書の内容をインポート
+import 'package:apusion/ui/home/home_page.dart'; // ホーム画面をインポート
 
 class ProfileDetailScreen extends StatefulWidget {
   final String documentId;
@@ -52,13 +53,13 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
   }
 
   Future<void> _checkIfPurchased() async {
-    DocumentSnapshot purchaseSnapshot = await FirebaseFirestore.instance
-        .collection('purchases')
+    DocumentSnapshot profileSnapshot = await FirebaseFirestore.instance
+        .collection('profiles')
         .doc(widget.documentId)
         .get();
 
     setState(() {
-      isPurchased = purchaseSnapshot.exists;
+      isPurchased = profileSnapshot.exists && profileSnapshot['status'] == '購入済み(Purchased)';
     });
   }
 
@@ -235,7 +236,9 @@ Widget _purchaseDialog() {
                   isPurchased = true;
                 });
 
-                Navigator.pop(context);
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => MainScreen()), // ホーム画面に遷移
+                );
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text("購入が完了し、来店予定を追加しました(Purchase completed and visit scheduled)")),
                 );
@@ -352,7 +355,9 @@ Future<void> _cancelPurchase() async {
                       profileData?['status'] = 'キャンセル待ち(cancel)'; // ローカルデータも更新
                     });
 
-                    Navigator.pop(context);
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (context) => MainScreen()), // ホーム画面に遷移
+                    );
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text("購入を取り消しました(Purchase canceled)")),
                     );

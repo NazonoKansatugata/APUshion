@@ -65,10 +65,28 @@ class FavoriteScreen extends StatelessWidget {
                             return Center(child: CircularProgressIndicator());
                           }
                           if (!profileSnapshot.hasData || !profileSnapshot.data!.exists) {
+                            // プロファイルが存在しない場合、likedProfilesから削除
+                            FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(FirebaseAuth.instance.currentUser?.uid)
+                                .collection('likedProfiles')
+                                .doc(profileId)
+                                .delete();
                             return SizedBox.shrink();
                           }
 
                           var profile = profileSnapshot.data!.data() as Map<String, dynamic>;
+                          if (profile['status'] != '出品中(listed)') {
+                            // ステータスが出品中でない場合、likedProfilesから削除
+                            FirebaseFirestore.instance
+                                .collection('users')
+                                .doc(FirebaseAuth.instance.currentUser?.uid)
+                                .collection('likedProfiles')
+                                .doc(profileId)
+                                .delete();
+                            return SizedBox.shrink();
+                          }
+
                           return Padding(
                             padding: const EdgeInsets.symmetric(vertical: 8),
                             child: ProfileCard(profile: profile, documentId: profileId),

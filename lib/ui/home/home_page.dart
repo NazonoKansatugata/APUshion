@@ -6,12 +6,12 @@ import 'package:provider/provider.dart';
 // 画面遷移のためのWidget
 import 'package:apusion/ui/home/HomeScreen.dart';
 import 'package:apusion/ui/create/view/create_page.dart';
-import 'package:apusion/ui/favorite/favorite_page.dart';
 import 'package:apusion/ui/home/ProfileCard.dart';
 import 'package:apusion/ui/home/ProfileDetailScreen.dart';
 import 'package:apusion/ui/auth/view/auth_page.dart';
 import 'package:apusion/ui/user/user_page.dart';
 import 'package:apusion/ui/shop/ShopScreen.dart'; // ShopScreen をインポート
+import 'package:apusion/ui/admin/user_list_screen.dart'; // 新しい画面をインポート
 
 // AuthViewModel をインポート
 import 'package:apusion/ui/auth/view_model/auth_view_model.dart';
@@ -29,7 +29,7 @@ class _MainScreenState extends State<MainScreen> {
     HomeScreen(),
     CreateScreen(),
     ShopScreen(),
-    FavoriteScreen(),
+    UserListScreen(), // 一般ユーザー情報画面を追加
     UserScreen(),
   ];
 
@@ -56,7 +56,7 @@ class _MainScreenState extends State<MainScreen> {
       BottomNavigationBarItem(icon: Icon(Icons.home), label: 'ホーム'),
       BottomNavigationBarItem(icon: Icon(Icons.create), label: 'クリエイト'),
       BottomNavigationBarItem(icon: Icon(Icons.store), label: 'ショップ'),
-      BottomNavigationBarItem(icon: Icon(Icons.favorite), label: 'お気に入り'),
+      BottomNavigationBarItem(icon: Icon(Icons.list), label: 'ユーザー一覧'), // 新しいアイテム
       BottomNavigationBarItem(icon: Icon(Icons.person), label: 'ユーザー'),
     ];
 
