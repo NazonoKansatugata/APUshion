@@ -5,7 +5,7 @@ import 'package:apusion/model/user_model.dart';
 import 'package:apusion/ui/auth/view_model/auth_view_model.dart';
 import 'package:apusion/ui/auth/view/auth_page.dart';
 import 'package:apusion/ui/user/user_proflile_page.dart';
-import 'package:apusion/ui/favorite/favorite_page.dart';
+import 'package:apusion/ui/user/favorite_page.dart';
 import 'package:apusion/ui/home/ProfileListScreen.dart';
 import 'package:apusion/ui/user/user_detail_page.dart';
 import 'package:apusion/ui/home/home_page.dart'; // これが必要
