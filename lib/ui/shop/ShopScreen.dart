@@ -149,6 +149,10 @@ class _ShopScreenState extends State<ShopScreen> {
                         iconData = Icons.shopping_cart;
                         color = Colors.green;
                         tag = "購入予定(Purchase)";
+                      } else if (visit['visitType'] == 'cancel') {
+                        iconData = Icons.cancel;
+                        color = Colors.red;
+                        tag = "キャンセル待ち(Cancel)";
                       } else {
                         iconData = Icons.store;
                         color = Colors.orange;

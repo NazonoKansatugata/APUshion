@@ -217,11 +217,7 @@ Widget _purchaseDialog() {
               }
 
               try {
-                await FirebaseFirestore.instance.collection('purchases').doc(widget.documentId).set({
-                  'buyerId': currentUserId,
-                  'purchaseDate': DateTime.now(),
-                });
-
+               
                 await FirebaseFirestore.instance.collection('shopVisits').add({
                   'userId': currentUserId,
                   'userName': FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー(Anonymous)',
@@ -257,34 +253,124 @@ Widget _purchaseDialog() {
   );
 }
 
-  // 購入取り消し処理
-  Future<void> _cancelPurchase() async {
-    try {
-      await FirebaseFirestore.instance.collection('purchases').doc(widget.documentId).delete();
+// 購入取り消し処理
+Future<void> _cancelPurchase() async {
+  String? selectedReason;
+  bool isAgreementChecked = false;
 
-      QuerySnapshot visitSnapshot = await FirebaseFirestore.instance
-          .collection('shopVisits')
-          .where('productId', isEqualTo: widget.documentId)
-          .where('userId', isEqualTo: currentUserId)
-          .get();
+  await showDialog(
+    context: context,
+    builder: (context) {
+      return StatefulBuilder(
+        builder: (context, setState) {
+          return AlertDialog(
+            title: Text("購入取り消し理由(Purchase Cancellation Reason)"),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                DropdownButtonFormField<String>(
+                  value: selectedReason,
+                  items: [
+                    DropdownMenuItem(
+                      value: "商品が不要になった(No longer needed)",
+                      child: Text("商品が不要になった(No longer needed)"),
+                    ),
+                    DropdownMenuItem(
+                      value: "配送が遅い(Delivery delay)",
+                      child: Text("配送が遅い(Delivery delay)"),
+                    ),
+                    DropdownMenuItem(
+                      value: "その他(Other)",
+                      child: Text("その他(Other)"),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    setState(() {
+                      selectedReason = value;
+                    });
+                  },
+                  decoration: const InputDecoration(labelText: "理由を選択してください(Select a reason)"),
+                ),
+                Row(
+                  children: [
+                    Checkbox(
+                      value: isAgreementChecked,
+                      onChanged: (bool? newValue) {
+                        setState(() {
+                          isAgreementChecked = newValue ?? false;
+                        });
+                      },
+                    ),
+                    Expanded(
+                      child: Text(
+                        "キャンセルに同意します(I agree to the cancellation)",
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("キャンセル(Cancel)"),
+              ),
+              ElevatedButton(
+                onPressed: () async {
+                  if (selectedReason == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("理由を選択してください(Please select a reason)")),
+                    );
+                    return;
+                  }
+                  if (!isAgreementChecked) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("キャンセルに同意してください(Please agree to the cancellation)")),
+                    );
+                    return;
+                  }
 
-      await Future.wait(visitSnapshot.docs.map((doc) => doc.reference.delete()));
+                  try {
+                    // 'profiles' のステータスをキャンセル待ちに更新
+                    await FirebaseFirestore.instance.collection('profiles').doc(widget.documentId).update({
+                      'status': 'キャンセル待ち(cancel)',
+                    });
 
-      await FirebaseFirestore.instance.collection('profiles').doc(widget.documentId).update({'status': '出品中(listed)'});
+                    // 'shopVisits' の該当データを更新
+                    QuerySnapshot visitSnapshot = await FirebaseFirestore.instance
+                        .collection('shopVisits')
+                        .where('productId', isEqualTo: widget.documentId)
+                        .where('userId', isEqualTo: currentUserId)
+                        .get();
 
-      setState(() {
-        isPurchased = false;
-      });
+                    await Future.wait(visitSnapshot.docs.map((doc) => doc.reference.update({
+                          'visitType': 'cancel',
+                        })));
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("購入を取り消しました(Purchase canceled)")),
+                    setState(() {
+                      profileData?['status'] = 'キャンセル待ち(cancel)'; // ローカルデータも更新
+                    });
+
+                    Navigator.pop(context);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("購入を取り消しました(Purchase canceled)")),
+                    );
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text("取り消しに失敗しました: $e")),
+                    );
+                  }
+                },
+                child: const Text("確定(Confirm)"),
+              ),
+            ],
+          );
+        },
       );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("取り消しに失敗しました: $e")),
-      );
-    }
-  }
+    },
+  );
+}
 
   // 編集画面へ遷移
   void _editItem() {
@@ -510,7 +596,44 @@ Widget _buildProductImages() {
                 children: [
                   _buildProductImages(),
                   _buildProductDetailsCard(),
-                  if (isAdmin || status == "下書き(draft)") // 一般ユーザーでも下書きの場合は編集可能
+                  if (isAdmin && status == "キャンセル待ち(cancel)")
+                    ElevatedButton(
+                      onPressed: () async {
+                        try {
+                          // 'shopVisits' の該当データを削除
+                          QuerySnapshot visitSnapshot = await FirebaseFirestore.instance
+                              .collection('shopVisits')
+                              .where('productId', isEqualTo: widget.documentId)
+                              .get();
+
+                          await Future.wait(visitSnapshot.docs.map((doc) => doc.reference.delete()));
+
+                          // 'profiles' のステータスを更新
+                          await FirebaseFirestore.instance.collection('profiles').doc(widget.documentId).update({
+                            'status': '出品中(listed)',
+                          });
+
+                          setState(() {
+                            profileData?['status'] = '出品中(listed)'; // ローカルデータも更新
+                          });
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text("キャンセルが承認されました(Cancellation approved)")),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text("キャンセル承認に失敗しました: $e")),
+                          );
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                      ),
+                      child: Text("キャンセルを承認(Approve Cancellation)", style: TextStyle(fontSize: 16, color: Colors.white)),
+                    )
+                  else if (isAdmin || status == "下書き(draft)") // 一般ユーザーでも下書きの場合は編集可能
                     ElevatedButton(
                       onPressed: _editItem,
                       style: ElevatedButton.styleFrom(
@@ -520,7 +643,7 @@ Widget _buildProductImages() {
                       ),
                       child: Text("編集(edit)", style: TextStyle(fontSize: 16, color: Colors.white)),
                     )
-                  else if (isPurchased)
+                  else if (status == "購入済み(Purchased)")
                     ElevatedButton(
                       onPressed: _cancelPurchase,
                       style: ElevatedButton.styleFrom(
@@ -530,7 +653,7 @@ Widget _buildProductImages() {
                       ),
                       child: Text("購入取り消し(Purchase cancellation)", style: TextStyle(fontSize: 16, color: Colors.white)),
                     )
-                  else
+                  else if (!isAdmin && status == "出品中(listed)")
                     ElevatedButton(
                       onPressed: _purchaseItem,
                       style: ElevatedButton.styleFrom(
