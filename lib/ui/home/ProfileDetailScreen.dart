@@ -217,8 +217,32 @@ Widget _purchaseDialog() {
                 return;
               }
 
+              // 配送の場合、ユーザー情報の必須項目をチェック
+              if (selectedPickupMethod == '配送(Delivery)') {
+                final authVM = context.read<AuthViewModel>();
+                final user = authVM.currentUser;
+
+                if (user == null ||
+                    user.email == null ||
+                    user.email!.isEmpty ||
+                    user.fullName == null ||
+                    user.fullName!.isEmpty ||
+                    user.address == null ||
+                    user.address!.isEmpty ||
+                    user.phoneNumber == null ||
+                    user.phoneNumber!.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        '配送を選択した場合、メールアドレス、本名、住所、電話番号が必要です(Email, Full Name, Address, and Phone Number are required for delivery)',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+              }
+
               try {
-               
                 await FirebaseFirestore.instance.collection('shopVisits').add({
                   'userId': currentUserId,
                   'userName': FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー(Anonymous)',
