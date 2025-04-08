@@ -36,10 +36,19 @@ class CreateScreenViewModel extends ChangeNotifier {
   }
 
   // 画像の削除（インデックス指定）
-  void removeImageAt(int index) {
+  void removeImageAt(int index) async {
     if (index >= 0 && index < imageUrls.length) {
+      final imageUrl = imageUrls[index];
       imageUrls.removeAt(index);
       notifyListeners();
+
+      // Firebase Storage から画像を削除
+      try {
+        await FirebaseStorage.instance.refFromURL(imageUrl).delete();
+        debugPrint('画像を削除しました(Deleted image): $imageUrl');
+      } catch (e) {
+        debugPrint('画像の削除に失敗しました(Failed to delete image): $e');
+      }
     }
   }
 
