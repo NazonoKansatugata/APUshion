@@ -229,7 +229,7 @@ class CreateScreen extends StatelessWidget {
     if (result == null) return;
 
     for (var file in result.files.take(5 - viewModel.imageUrls.length)) { // 最大5枚まで制限
-      if (file.bytes == null || file.bytes!.length > 1048576) { // 1MBを超える場合はスキップ
+      if (file.bytes == null || file.bytes!.length > 5242880) { // 5MBを超える場合はスキップ
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text("画像サイズが大きすぎます(Image size is too large): ${file.bytes?.length ?? 0} bytes")),
         );
