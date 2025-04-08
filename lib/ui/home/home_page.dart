@@ -83,26 +83,27 @@ class _MainScreenState extends State<MainScreen> {
                 context: context,
                 builder: (BuildContext context) {
                   return AlertDialog(
-                    title: const Text("どの画面の説明を表示しますか？"),
+                    title: const Text("どの画面の説明を表示しますか？(Which screen's explanation would you like to see?)"),
                     content: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         ListTile(
-                          title: const Text("ホーム画面"),
+                          title: const Text("ホーム画面(Home Screen)"),
                           onTap: () {
                             Navigator.of(context).pop();
                             _showHelpDialog(context, HelpTexts.home);
                           },
                         ),
                         ListTile(
-                          title: const Text("ショップ画面"),
+                          title: const Text("ショップ画面(Shop Screen)"),
                           onTap: () {
                             Navigator.of(context).pop();
                             _showHelpDialog(context, HelpTexts.shop);
                           },
                         ),
                         ListTile(
-                          title: const Text("ユーザー画面"),
+                          title: const Text("ユーザー画面(User Screen)"),
+                          
                           onTap: () {
                             Navigator.of(context).pop();
                             _showHelpDialog(context, HelpTexts.user);
@@ -136,7 +137,7 @@ class _MainScreenState extends State<MainScreen> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("画面の説明"),
+          title: const Text("画面の説明(Explanation of the screen)"),
           content: SingleChildScrollView(
             child: Text(helpText),
           ),
@@ -145,7 +146,7 @@ class _MainScreenState extends State<MainScreen> {
               onPressed: () {
                 Navigator.of(context).pop();
               },
-              child: const Text("閉じる"),
+              child: const Text("閉じる(Close)"),
             ),
           ],
         );
