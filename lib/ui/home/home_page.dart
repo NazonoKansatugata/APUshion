@@ -15,6 +15,7 @@ import 'package:apusion/ui/admin/user_list_screen.dart'; // 新しい画面を�
 
 // AuthViewModel をインポート
 import 'package:apusion/ui/auth/view_model/auth_view_model.dart';
+import 'package:apusion/ui/home/help_texts.dart'; // ヘルプテキストをインポート
 
 class MainScreen extends StatefulWidget {
   @override
@@ -74,6 +75,47 @@ class _MainScreenState extends State<MainScreen> {
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.help_outline),
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    title: const Text("どの画面の説明を表示しますか？"),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        ListTile(
+                          title: const Text("ホーム画面"),
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            _showHelpDialog(context, HelpTexts.home);
+                          },
+                        ),
+                        ListTile(
+                          title: const Text("ショップ画面"),
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            _showHelpDialog(context, HelpTexts.shop);
+                          },
+                        ),
+                        ListTile(
+                          title: const Text("ユーザー画面"),
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            _showHelpDialog(context, HelpTexts.user);
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ],
       ),
       body: isAdmin
           ? _adminScreens[_selectedIndex]
@@ -86,6 +128,28 @@ class _MainScreenState extends State<MainScreen> {
         unselectedItemColor: Colors.black,
         onTap: _onItemTapped,
       ),
+    );
+  }
+
+  void _showHelpDialog(BuildContext context, String helpText) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("画面の説明"),
+          content: SingleChildScrollView(
+            child: Text(helpText),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text("閉じる"),
+            ),
+          ],
+        );
+      },
     );
   }
 }
