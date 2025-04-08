@@ -137,7 +137,9 @@ class _MainScreenState extends State<MainScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("画面の説明"),
-          content: Text(helpText),
+          content: SingleChildScrollView(
+            child: Text(helpText),
+          ),
           actions: [
             TextButton(
               onPressed: () {
