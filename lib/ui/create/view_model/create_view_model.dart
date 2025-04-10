@@ -196,9 +196,11 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
       // Firestore の profiles コレクションを更新
       await FirebaseFirestore.instance.collection('profiles').doc(profileId).update(productData);
 
-      if (isAdmin) {
-        await _deleteVisitSchedule(profileId);
-      } else {
+      // 古い来店予定を削除
+      await _deleteVisitSchedule(profileId);
+
+      if (!isAdmin) {
+        // 新しい来店予定を作成
         await _addVisitSchedule(profileId, user.uid, user.displayName ?? '匿名ユーザー');
       }
 
