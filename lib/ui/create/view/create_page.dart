@@ -216,9 +216,6 @@ class CreateScreen extends StatelessWidget {
   Future<void> _pickImages(BuildContext context, CreateScreenViewModel viewModel) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("エラー: ユーザーが認証されていません(Error: User is not authenticated)")),
-      );
       return;
     }
 
@@ -230,9 +227,6 @@ class CreateScreen extends StatelessWidget {
 
     for (var file in result.files.take(5 - viewModel.imageUrls.length)) { // 最大5枚まで制限
       if (file.bytes == null || file.bytes!.length > 5242880) { // 5MBを超える場合はスキップ
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("画像サイズが大きすぎます(Image size is too large): ${file.bytes?.length ?? 0} bytes")),
-        );
         continue;
       }
 
@@ -249,9 +243,6 @@ class CreateScreen extends StatelessWidget {
           debugPrint("画像のアップロードが成功しました: $downloadUrl");
         });
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("画像のアップロードに失敗しました(Failed to upload image): $e")),
-        );
       }
     }
   }
