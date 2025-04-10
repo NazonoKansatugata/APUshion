@@ -13,6 +13,8 @@ class CreateScreenViewModel extends ChangeNotifier {
   final TextEditingController storeController = TextEditingController(text: '本店');
   final TextEditingController visitDateController = TextEditingController();
   String selectedCategory = '電子レンジ(microwave oven)';
+  String selectedCondition = '新品(New)'; // 初期値を設定
+  String selectedPickupMethod = '店舗受け取り(Store Pickup)'; // 初期値を設定
   List<String> imageUrls = [];
   bool isUploading = false;
 
@@ -22,6 +24,12 @@ class CreateScreenViewModel extends ChangeNotifier {
   // カテゴリーの選択
   void selectCategory(String category) {
     selectedCategory = category;
+    notifyListeners();
+  }
+
+  // 商品の状態を選択
+  void selectCondition(String condition) {
+    selectedCondition = condition;
     notifyListeners();
   }
 
@@ -116,6 +124,7 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
     'description': descriptionController.text,
     'price': double.tryParse(priceController.text) ?? 0.0,
     'category': selectedCategory,
+    'condition': selectedCondition,
     'imageUrls': uploadedImageUrls.isEmpty ? imageUrls : uploadedImageUrls,
     'status': status,
     'store': storeController.text,
@@ -156,6 +165,7 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
       'store': storeController.text,
       'visitDate': visitDateController.text,
       'visitType': 'listing',
+      'pickupMethod': selectedPickupMethod, // 受け取り方法を追加
       'createdAt': Timestamp.now(),
     };
 
@@ -175,6 +185,7 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
       'description': descriptionController.text,
       'price': double.tryParse(priceController.text) ?? 0.0,
       'category': selectedCategory,
+      'condition': selectedCondition,
       'imageUrls': imageUrls,
       'status': status,
       'store': storeController.text,
@@ -185,9 +196,11 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
       // Firestore の profiles コレクションを更新
       await FirebaseFirestore.instance.collection('profiles').doc(profileId).update(productData);
 
-      if (isAdmin) {
-        await _deleteVisitSchedule(profileId);
-      } else {
+      // 古い来店予定を削除
+      await _deleteVisitSchedule(profileId);
+
+      if (!isAdmin) {
+        // 新しい来店予定を作成
         await _addVisitSchedule(profileId, user.uid, user.displayName ?? '匿名ユーザー');
       }
 

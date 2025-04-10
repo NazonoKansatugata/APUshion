@@ -143,9 +143,17 @@ Widget _purchaseDialog() {
                 onPressed: () async {
                   pickedDate = await showDatePicker(
                     context: context,
-                    initialDate: DateTime.now(),
+                    initialDate: selectedPickupMethod == '配送(Delivery)'
+                        ? DateTime.now().add(Duration(days: (DateTime.wednesday - DateTime.now().weekday + 7) % 7)) // 次の水曜日
+                        : DateTime.now(),
                     firstDate: DateTime.now(),
                     lastDate: DateTime.now().add(Duration(days: 365)),
+                    selectableDayPredicate: (date) {
+                      if (selectedPickupMethod == '配送(Delivery)') {
+                        return date.weekday == DateTime.wednesday; // 水曜日のみ選択可能
+                      }
+                      return true; // その他の場合は全日選択可能
+                    },
                   );
 
                   if (pickedDate != null) {
@@ -423,8 +431,8 @@ Widget _buildProductImages() {
       children: [
         Center(
           child: Container(
-            width: 300,
-            height: 250,
+            width: 500, // 幅をさらに大きく設定
+            height: 400, // 高さをさらに大きく設定
             child: PageView.builder(
               controller: _pageController,
               itemCount: profileData!['imageUrls'].length,
@@ -484,8 +492,8 @@ Widget _buildProductImages() {
                 },
                 child: Container(
                   margin: EdgeInsets.symmetric(horizontal: 4),
-                  width: 60,
-                  height: 60,
+                  width: 100, // サムネイルの幅をさらに大きく設定
+                  height: 100, // サムネイルの高さをさらに大きく設定
                   decoration: BoxDecoration(
                     border: Border.all(
                       color: _currentPage == index ? Colors.blue : Colors.grey,
@@ -510,7 +518,7 @@ Widget _buildProductImages() {
   } else {
     return Center(
       child: Container(
-        height: 250,
+        height: 400, // 高さをさらに大きく設定
         color: Colors.grey[300],
         child: Center(
           child: Text(
@@ -577,6 +585,12 @@ Widget _buildProductImages() {
                 '出品日時(updatedAt): ${profileData?['updatedAt']?.toDate().toString() ?? '不明(Date unknown)'}',
                 style: TextStyle(fontSize: 16, color: Colors.grey[700]),
               ),
+              SizedBox(height: 8),
+              Text(
+                '商品の状態(Condition): ${profileData?['condition'] ?? '未設定(Not set)'}',
+                style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+              ),
+              SizedBox(height: 8),
             ],
           ),
         ),

@@ -66,17 +66,20 @@ class HomeScreen extends StatelessWidget {
 
                   // 🔥 ここでランダムに5つ選ぶ
                   profiles.shuffle(Random());
-                  List<Map<String, dynamic>> randomProfiles = profiles.take(5).toList();
+                  List<Map<String, dynamic>> randomProfiles = profiles.take(9).toList();
 
-                  return ListView.builder(
+                  return GridView.builder(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3, // 一行に3つ表示
+                      crossAxisSpacing: 8,
+                      mainAxisSpacing: 8,
+                      childAspectRatio: 1, // 正方形
+                    ),
                     itemCount: randomProfiles.length,
                     itemBuilder: (context, index) {
                       var profile = randomProfiles[index];
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        child: ProfileCard(profile: profile, documentId: profile['id'] ?? 'unknown'),
-                      );
+                      return ProfileCard(profile: profile, documentId: profile['id'] ?? 'unknown');
                     },
                   );
                 },
