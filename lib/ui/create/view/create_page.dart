@@ -65,6 +65,22 @@ class CreateScreen extends StatelessWidget {
                   decoration: InputDecoration(labelText: "カテゴリ(Category)"),
                 ),
                 const SizedBox(height: 20),
+                DropdownButtonFormField<String>(
+                  value: viewModel.selectedCondition,
+                  items: [
+                    '新品(New)',
+                    '未使用に近い(Almost New)',
+                    '目立った傷や汚れなし(No Noticeable Damage)',
+                    'やや傷や汚れあり(Some Damage)',
+                    '傷や汚れあり(Damaged)',
+                    '全体的に状態が悪い(Poor Condition)',
+                  ].map((condition) {
+                    return DropdownMenuItem(value: condition, child: Text(condition));
+                  }).toList(),
+                  onChanged: (value) => viewModel.selectedCondition = value!,
+                  decoration: InputDecoration(labelText: "商品の状態(Product Condition)"),
+                ),
+                const SizedBox(height: 20),
                 Wrap(
                   children: [
                     ReorderableListView(

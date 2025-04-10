@@ -577,6 +577,12 @@ Widget _buildProductImages() {
                 '出品日時(updatedAt): ${profileData?['updatedAt']?.toDate().toString() ?? '不明(Date unknown)'}',
                 style: TextStyle(fontSize: 16, color: Colors.grey[700]),
               ),
+              SizedBox(height: 8),
+              Text(
+                '商品の状態(Condition): ${profileData?['condition'] ?? '未設定(Not set)'}',
+                style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+              ),
+              SizedBox(height: 8),
             ],
           ),
         ),

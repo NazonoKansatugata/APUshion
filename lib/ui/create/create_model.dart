@@ -11,6 +11,7 @@ class Product {
   String status;
   String store;
   String visitDate;
+  String condition; // 商品の状態を追加
   Timestamp createdAt;
   Timestamp updatedAt;
 
@@ -25,6 +26,7 @@ class Product {
     required this.status,
     required this.store,
     required this.visitDate,
+    required this.condition, // 商品の状態を追加
     required this.createdAt,
     required this.updatedAt,
   });
@@ -42,6 +44,7 @@ class Product {
       status: data['status'] ?? '下書き(Draft)',
       store: data['store'] ?? '未設定(Unset)',
       visitDate: data['visitDate'] ?? '未設定(Unset)',
+      condition: data['condition'] ?? '未設定(Unset)', // デフォルト値を設定
       createdAt: data['createdAt'] ?? Timestamp.now(),
       updatedAt: data['updatedAt'] ?? Timestamp.now(),
     );
@@ -58,6 +61,7 @@ class Product {
       'status': status,
       'store': store,
       'visitDate': visitDate,
+      'condition': condition, // 商品の状態を追加
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };
