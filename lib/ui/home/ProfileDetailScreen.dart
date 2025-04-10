@@ -423,8 +423,8 @@ Widget _buildProductImages() {
       children: [
         Center(
           child: Container(
-            width: 300,
-            height: 250,
+            width: 500, // 幅をさらに大きく設定
+            height: 400, // 高さをさらに大きく設定
             child: PageView.builder(
               controller: _pageController,
               itemCount: profileData!['imageUrls'].length,
@@ -484,8 +484,8 @@ Widget _buildProductImages() {
                 },
                 child: Container(
                   margin: EdgeInsets.symmetric(horizontal: 4),
-                  width: 60,
-                  height: 60,
+                  width: 100, // サムネイルの幅をさらに大きく設定
+                  height: 100, // サムネイルの高さをさらに大きく設定
                   decoration: BoxDecoration(
                     border: Border.all(
                       color: _currentPage == index ? Colors.blue : Colors.grey,
@@ -510,7 +510,7 @@ Widget _buildProductImages() {
   } else {
     return Center(
       child: Container(
-        height: 250,
+        height: 400, // 高さをさらに大きく設定
         color: Colors.grey[300],
         child: Center(
           child: Text(
