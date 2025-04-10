@@ -112,6 +112,18 @@ class _ProfileCardState extends State<ProfileCard> {
               ),
             ),
             Positioned(
+              top: 8,
+              right: 8,
+              child: GestureDetector(
+                onTap: () => _toggleFavorite(context),
+                child: Icon(
+                  isFavorite ? Icons.favorite : Icons.favorite_border,
+                  color: isFavorite ? Colors.red : Colors.white,
+                  size: 24,
+                ),
+              ),
+            ),
+            Positioned(
               bottom: 8,
               right: 8,
               child: Container(

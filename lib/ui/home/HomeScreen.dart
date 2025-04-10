@@ -66,7 +66,7 @@ class HomeScreen extends StatelessWidget {
 
                   // 🔥 ここでランダムに5つ選ぶ
                   profiles.shuffle(Random());
-                  List<Map<String, dynamic>> randomProfiles = profiles.take(5).toList();
+                  List<Map<String, dynamic>> randomProfiles = profiles.take(9).toList();
 
                   return GridView.builder(
                     padding: EdgeInsets.symmetric(horizontal: 16, vertical: 20),
