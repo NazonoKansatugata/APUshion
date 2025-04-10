@@ -14,6 +14,7 @@ class CreateScreenViewModel extends ChangeNotifier {
   final TextEditingController visitDateController = TextEditingController();
   String selectedCategory = '電子レンジ(microwave oven)';
   String selectedCondition = '新品(New)'; // 初期値を設定
+  String selectedPickupMethod = '店舗受け取り(Store Pickup)'; // 初期値を設定
   List<String> imageUrls = [];
   bool isUploading = false;
 
@@ -164,6 +165,7 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
       'store': storeController.text,
       'visitDate': visitDateController.text,
       'visitType': 'listing',
+      'pickupMethod': selectedPickupMethod, // 受け取り方法を追加
       'createdAt': Timestamp.now(),
     };
 
