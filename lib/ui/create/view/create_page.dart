@@ -46,15 +46,17 @@ class CreateScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 TextField(
                   controller: viewModel.descriptionController,
-                  decoration: InputDecoration(labelText: "商品説明(Product Description)"),
+                  decoration: InputDecoration(
+                    labelText: "商品説明(Product Description)",
+                    hintText: "例: メーカー、年数、特徴など (e.g., Manufacturer, Year, Features)",
+                  ),
                 ),
                 const SizedBox(height: 20),
-                if (isAdmin)
-                  TextField(
-                    controller: viewModel.priceController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(labelText: "価格(Price)"),
-                  ),
+                TextField(
+                  controller: viewModel.priceController,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(labelText: "価格(Price)"),
+                ),
                 const SizedBox(height: 20),
                 DropdownButtonFormField<String>(
                   value: viewModel.selectedCategory,
