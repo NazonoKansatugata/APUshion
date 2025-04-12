@@ -116,12 +116,12 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
                       TextFormField(
                         controller: _nameController,
                         decoration: const InputDecoration(
-                          labelText: '名前',
+                          labelText: 'ニックネーム(Nickname)',
                           border: OutlineInputBorder(),
                         ),
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return '名前を入力してください';
+                            return '名前を入力してください(Please enter your name)';
                           }
                           return null;
                         },
