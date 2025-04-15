@@ -71,65 +71,62 @@ class _EmailSignUpState extends State<EmailSignUpPage> {
       ),
       body: BackgroundAnimation1(
         size: MediaQuery.of(context).size,
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Sign Up',
-                    style: TextStyle(
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold,
-                    ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'Sign Up',
+                  style: TextStyle(
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const SizedBox(height: 15),
-                  TextFormField(
-                    controller: emailController,
-                    decoration: const InputDecoration(
-                      icon: Icon(Icons.mail),
-                      hintText: 'example@email.com',
-                      labelText: 'Email Address',
-                    ),
+                ),
+                const SizedBox(height: 15),
+                TextFormField(
+                  controller: emailController,
+                  decoration: const InputDecoration(
+                    icon: Icon(Icons.mail),
+                    hintText: 'example@email.com',
+                    labelText: 'Email Address',
                   ),
-                  const SizedBox(height: 15),
-                  TextFormField(
-                    controller: passwordController,
-                    obscureText: hidePassword,
-                    decoration: InputDecoration(
-                      icon: const Icon(Icons.lock),
-                      labelText: 'Password',
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          hidePassword
-                              ? Icons.visibility_off
-                              : Icons.visibility,
-                        ),
-                        onPressed: () {
-                          setState(() {
-                            hidePassword = !hidePassword;
-                          });
-                        },
+                ),
+                const SizedBox(height: 15),
+                TextFormField(
+                  controller: passwordController,
+                  obscureText: hidePassword,
+                  decoration: InputDecoration(
+                    icon: const Icon(Icons.lock),
+                    labelText: 'Password',
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        hidePassword ? Icons.visibility_off : Icons.visibility,
                       ),
+                      onPressed: () {
+                        setState(() {
+                          hidePassword = !hidePassword;
+                        });
+                      },
                     ),
                   ),
-                  const SizedBox(height: 15),
-                  ElevatedButton(
-                    child: const Text('登録'),
-                    onPressed: _signUp,
-                  ),
-                  if (errorMessage.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16.0),
-                      child: Text(
-                        errorMessage,
-                        style: const TextStyle(color: Colors.red),
-                      ),
+                ),
+                const SizedBox(height: 15),
+                ElevatedButton(
+                  child: const Text('登録'),
+                  onPressed: _signUp,
+                ),
+                if (errorMessage.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
+                    child: Text(
+                      errorMessage,
+                      style: const TextStyle(color: Colors.red),
                     ),
-                ],
-              ),
+                  ),
+              ],
             ),
           ),
         ),

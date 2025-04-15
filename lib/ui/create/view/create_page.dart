@@ -152,16 +152,11 @@ class CreateScreen extends StatelessWidget {
                       onTap: () async {
                         DateTime? selectedDate = await showDatePicker(
                           context: context,
-                          initialDate: viewModel.selectedPickupMethod == '配送(Delivery)'
-                              ? DateTime.now().add(Duration(days: (DateTime.wednesday - DateTime.now().weekday + 7) % 7)) // 次の水曜日
-                              : DateTime.now(),
+                          initialDate: DateTime.now().add(Duration(days: (DateTime.wednesday - DateTime.now().weekday + 7) % 7)), // 次の水曜日
                           firstDate: DateTime.now(),
                           lastDate: DateTime(2101),
                           selectableDayPredicate: (date) {
-                            if (viewModel.selectedPickupMethod == '配送(Delivery)') {
-                              return date.weekday == DateTime.wednesday; // 水曜日のみ選択可能
-                            }
-                            return true; // その他の場合は全日選択可能
+                            return date.weekday == DateTime.wednesday; // 水曜日のみ選択可能
                           },
                         );
                         if (selectedDate != null) {
