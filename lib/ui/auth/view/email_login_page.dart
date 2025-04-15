@@ -78,13 +78,13 @@ class _EmailLoginPage extends State<EmailLoginPage> {
     return Scaffold(
       body: BackgroundAnimation1(
         size: MediaQuery.of(context).size,
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Center(
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: MainAxisSize.max,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const SizedBox(height: 50),
                 const Text(
                   'Login',
                   style: TextStyle(
@@ -138,7 +138,6 @@ class _EmailLoginPage extends State<EmailLoginPage> {
                       textAlign: TextAlign.center,
                     ),
                   ),
-                const SizedBox(height: 20),
               ],
             ),
           ),
