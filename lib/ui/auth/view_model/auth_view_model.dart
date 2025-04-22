@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:apusion/model/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_web_auth/flutter_web_auth.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
@@ -149,8 +148,16 @@ class AuthViewModel extends ChangeNotifier {
   /// LINEログイン (Web用)
   Future<void> signInWithLineWeb() async {
     try {
-      final clientId = dotenv.env['LINE_CHANNEL_ID']!;
-      final redirectUri = dotenv.env['LINE_REDIRECT_URI']!;
+      // FirestoreからLINE設定を取得
+      final settingsDoc = await FirebaseFirestore.instance.collection('settings').doc('line').get();
+      final settings = settingsDoc.data();
+
+      if (settings == null || !settings.containsKey('LINE_CHANNEL_ID') || !settings.containsKey('LINE_REDIRECT_URI')) {
+        throw Exception("FirestoreにLINE設定が見つかりません。");
+      }
+
+      final clientId = settings['LINE_CHANNEL_ID'];
+      final redirectUri = settings['LINE_REDIRECT_URI'];
       final state = "random_state_string"; // CSRF対策用のランダムな文字列
 
       final authUrl = Uri.https("access.line.me", "/oauth2/v2.1/authorize", {
