@@ -2,13 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:apusion/model/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-
+import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
   UserModel? currentUser;
-
 
   static const String adminUid = '0jbF0jcGAaeWyOiZ75LzFbmfQK22';
 
@@ -147,5 +146,34 @@ class AuthViewModel extends ChangeNotifier {
 
     notifyListeners();
   }
-}
+  }
+
+  /// LINEログイン
+  Future<void> signInWithLine() async {
+    try {
+      final result = await LineSDK.instance.login();
+      final userProfile = result.userProfile;
+
+      if (userProfile != null) {
+        currentUser = UserModel(
+          uid: userProfile.userId,
+          name: userProfile.displayName,
+          email: null, // LINEログインではメールアドレスは取得できない場合が多い
+          photoURL: userProfile.pictureUrl,
+          isEmailVerified: false,
+          isAnonymous: false,
+          phoneNumber: null,
+          refreshToken: null,
+          tenantId: null,
+          fullName: null,
+          address: null,
+        );
+        await storeUserProfile(currentUser!);
+      }
+    } catch (e) {
+      print('LINEログインエラー: $e');
+      rethrow;
+    }
+    notifyListeners();
+  }
 }

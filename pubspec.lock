@@ -270,6 +270,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.2.1"
+  flutter_line_sdk:
+    dependency: "direct main"
+    description:
+      name: flutter_line_sdk
+      sha256: "662b99a10f697c9b58eb31fc5892e81c683952630b27932d68b754ceb4d53acb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.5.2"
   flutter_link_previewer:
     dependency: transitive
     description:
