@@ -12,7 +12,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   ); // Firebaseの初期化
-  LineSDK.instance.setup("YOUR_CHANNEL_ID").then((_) {
+  LineSDK.instance.setup("2007273917").then((_) {
     print("LineSDK is ready");
   });
   runApp(
