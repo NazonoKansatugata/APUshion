@@ -97,6 +97,51 @@ class AuthPage extends StatelessWidget {
                         },
                       ),
                     ),
+
+                    // LINEログイン
+                    Container(
+                      width: 300,
+                      margin: const EdgeInsets.all(10),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.chat_bubble, // LINEアイコンの代替
+                              color: Colors.white,
+                              size: 24.0,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Center(
+                                child: const Text(
+                                  'LINEでログイン',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        onPressed: () async {
+                          try {
+                            await context.read<AuthViewModel>().signInWithLine();
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MainScreen(), // const を削除
+                              ),
+                            );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('LINEログインに失敗しました: $e')),
+                            );
+                          }
+                        },
+                      ),
+                    ),
                   ],
                 ),
               ),
