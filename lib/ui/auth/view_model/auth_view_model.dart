@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:apusion/model/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_web_auth/flutter_web_auth.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 class AuthViewModel extends ChangeNotifier {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
@@ -176,10 +178,51 @@ class AuthViewModel extends ChangeNotifier {
 
       // 認証コードを取得
       final code = Uri.parse(result).queryParameters['code'];
-      if (code != null) {
-        print("Authorization Code: $code");
-        // ここでアクセストークンを取得し、ユーザー情報を取得する処理を追加できます
+      if (code == null) {
+        throw Exception("認証コードが取得できませんでした。");
       }
+
+      // LINEのアクセストークンを取得
+      final tokenResponse = await http.post(
+        Uri.parse("https://api.line.me/oauth2/v2.1/token"),
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: {
+          "grant_type": "authorization_code",
+          "code": code,
+          "redirect_uri": redirectUri,
+          "client_id": clientId,
+          "client_secret": settings['LINE_CLIENT_SECRET'], // Firestoreに保存されたクライアントシークレット
+        },
+      );
+
+      if (tokenResponse.statusCode != 200) {
+        throw Exception("LINEアクセストークンの取得に失敗しました: ${tokenResponse.body}");
+      }
+
+      final tokenData = json.decode(tokenResponse.body);
+      final accessToken = tokenData['access_token'];
+
+      // Firebase カスタムトークンを取得
+      final customTokenResponse = await http.post(
+        Uri.parse("https://<YOUR_FIREBASE_FUNCTIONS_URL>/generateCustomToken"), // デプロイしたFirebase FunctionsのURL
+        headers: {
+          "Authorization": "Bearer $accessToken",
+        },
+      );
+
+      if (customTokenResponse.statusCode != 200) {
+        throw Exception("Firebaseカスタムトークンの取得に失敗しました: ${customTokenResponse.body}");
+      }
+
+      final customToken = json.decode(customTokenResponse.body)['customToken'];
+
+      // Firebase にログイン
+      await _firebaseAuth.signInWithCustomToken(customToken);
+
+      // ユーザー情報を取得
+      await fetchUser();
     } catch (e) {
       print("LINEログインエラー: $e");
       rethrow;
