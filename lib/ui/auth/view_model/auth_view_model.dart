@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:apusion/model/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_line_sdk/flutter_line_sdk.dart';
+import 'package:flutter_web_auth/flutter_web_auth.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AuthViewModel extends ChangeNotifier {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
@@ -26,7 +27,7 @@ class AuthViewModel extends ChangeNotifier {
         currentUser = await _convertToUserModel(user);
         await storeUserProfile(currentUser!);
       }
-    } catch (e, st) {
+    } catch (e) {
       rethrow;
     }
     notifyListeners();
@@ -44,7 +45,7 @@ class AuthViewModel extends ChangeNotifier {
         currentUser = await _convertToUserModel(user);
         await storeUserProfile(currentUser!);
       }
-    } catch (e, st) {
+    } catch (e) {
       rethrow;
     }
     notifyListeners();
@@ -71,10 +72,7 @@ class AuthViewModel extends ChangeNotifier {
       final userRef =
           FirebaseFirestore.instance.collection('users').doc(user.uid);
       await userRef.set(usermodel.toJson());
-      await userRef
-          .collection('likedProfiles')
-          .doc('null')
-          .set({});
+      await userRef.collection('likedProfiles').doc('null').set({});
     }
     notifyListeners();
   }
@@ -106,74 +104,78 @@ class AuthViewModel extends ChangeNotifier {
 
   /// ユーザーのプロフィール情報（name, photoURL）を更新する処理
   Future<void> updateUserProfile({
-  String? name,
-  String? photoURL,
-  String? fullName,
-  String? address,
-  String? phoneNumber,
-}) async {
-  final user = _firebaseAuth.currentUser;
-  if (user != null) {
-    if (name != null || photoURL != null) {
-      await user.updateProfile(
-        displayName: name ?? user.displayName,
-        photoURL: photoURL ?? user.photoURL,
-      );
-      await user.reload();
-    }
-
-    final userRef =
-        FirebaseFirestore.instance.collection('users').doc(user.uid);
-    final Map<String, dynamic> updatedData = {};
-    if (name != null) updatedData['name'] = name;
-    if (photoURL != null) updatedData['photoURL'] = photoURL;
-    if (fullName != null) updatedData['fullName'] = fullName;
-    if (address != null) updatedData['address'] = address;
-    if (phoneNumber != null) updatedData['phoneNumber'] = phoneNumber;
-
-    if (updatedData.isNotEmpty) {
-      await userRef.update(updatedData);
-    }
-
-    // currentUser にも反映（nullチェック済み）
-    if (currentUser != null) {
-      currentUser!.name = name ?? currentUser!.name;
-      currentUser!.photoURL = photoURL ?? currentUser!.photoURL;
-      currentUser!.fullName = fullName ?? currentUser!.fullName;
-      currentUser!.address = address ?? currentUser!.address;
-      currentUser!.phoneNumber = phoneNumber ?? currentUser!.phoneNumber;
-    }
-
-    notifyListeners();
-  }
-  }
-
-  /// LINEログイン
-  Future<void> signInWithLine() async {
-    try {
-      final result = await LineSDK.instance.login();
-      final userProfile = result.userProfile;
-
-      if (userProfile != null) {
-        currentUser = UserModel(
-          uid: userProfile.userId,
-          name: userProfile.displayName,
-          email: null, // LINEログインではメールアドレスは取得できない場合が多い
-          photoURL: userProfile.pictureUrl,
-          isEmailVerified: false,
-          isAnonymous: false,
-          phoneNumber: null,
-          refreshToken: null,
-          tenantId: null,
-          fullName: null,
-          address: null,
+    String? name,
+    String? photoURL,
+    String? fullName,
+    String? address,
+    String? phoneNumber,
+  }) async {
+    final user = _firebaseAuth.currentUser;
+    if (user != null) {
+      if (name != null || photoURL != null) {
+        await user.updateProfile(
+          displayName: name ?? user.displayName,
+          photoURL: photoURL ?? user.photoURL,
         );
-        await storeUserProfile(currentUser!);
+        await user.reload();
+      }
+
+      final userRef =
+          FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final Map<String, dynamic> updatedData = {};
+      if (name != null) updatedData['name'] = name;
+      if (photoURL != null) updatedData['photoURL'] = photoURL;
+      if (fullName != null) updatedData['fullName'] = fullName;
+      if (address != null) updatedData['address'] = address;
+      if (phoneNumber != null) updatedData['phoneNumber'] = phoneNumber;
+
+      if (updatedData.isNotEmpty) {
+        await userRef.update(updatedData);
+      }
+
+      // currentUser にも反映（nullチェック済み）
+      if (currentUser != null) {
+        currentUser!.name = name ?? currentUser!.name;
+        currentUser!.photoURL = photoURL ?? currentUser!.photoURL;
+        currentUser!.fullName = fullName ?? currentUser!.fullName;
+        currentUser!.address = address ?? currentUser!.address;
+        currentUser!.phoneNumber = phoneNumber ?? currentUser!.phoneNumber;
+      }
+
+      notifyListeners();
+    }
+  }
+
+  /// LINEログイン (Web用)
+  Future<void> signInWithLineWeb() async {
+    try {
+      final clientId = dotenv.env['LINE_CHANNEL_ID']!;
+      final redirectUri = dotenv.env['LINE_REDIRECT_URI']!;
+      final state = "random_state_string"; // CSRF対策用のランダムな文字列
+
+      final authUrl = Uri.https("access.line.me", "/oauth2/v2.1/authorize", {
+        "response_type": "code",
+        "client_id": clientId,
+        "redirect_uri": redirectUri,
+        "state": state,
+        "scope": "profile openid email",
+      }).toString();
+
+      // Webブラウザで認証を開始
+      final result = await FlutterWebAuth.authenticate(
+        url: authUrl,
+        callbackUrlScheme: Uri.parse(redirectUri).scheme,
+      );
+
+      // 認証コードを取得
+      final code = Uri.parse(result).queryParameters['code'];
+      if (code != null) {
+        print("Authorization Code: $code");
+        // ここでアクセストークンを取得し、ユーザー情報を取得する処理を追加できます
       }
     } catch (e) {
-      print('LINEログインエラー: $e');
+      print("LINEログインエラー: $e");
       rethrow;
     }
-    notifyListeners();
   }
 }

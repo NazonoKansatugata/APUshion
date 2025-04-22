@@ -9,6 +9,7 @@ import 'package:flutter_line_sdk/flutter_line_sdk.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load(fileName: "assets/.env"); // ファイルパスを明示的に指定
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   ); // Firebaseの初期化

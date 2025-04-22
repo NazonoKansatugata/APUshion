@@ -127,11 +127,56 @@ class AuthPage extends StatelessWidget {
                         ),
                         onPressed: () async {
                           try {
-                            await context.read<AuthViewModel>().signInWithLine();
+                            await context.read<AuthViewModel>().signInWithLineWeb();
                             Navigator.pushReplacement(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => MainScreen(), // const を削除
+                                builder: (context) => MainScreen(),
+                              ),
+                            );
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('LINEログインに失敗しました: $e')),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+
+                    // LINEログイン (Web用)
+                    Container(
+                      width: 300,
+                      margin: const EdgeInsets.all(10),
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.chat_bubble, // LINEアイコンの代替
+                              color: Colors.white,
+                              size: 24.0,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Center(
+                                child: const Text(
+                                  'LINEでログイン (Web)',
+                                  style: TextStyle(color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        onPressed: () async {
+                          try {
+                            await context.read<AuthViewModel>().signInWithLineWeb();
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => MainScreen(),
                               ),
                             );
                           } catch (e) {
