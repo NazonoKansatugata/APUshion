@@ -36,7 +36,7 @@ class AuthPage extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon( // HugeIconをIconに変更
+                            Icon(
                               Icons.mail,
                               color: Colors.black,
                               size: 24.0,
@@ -71,7 +71,7 @@ class AuthPage extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon( // HugeIconをIconに変更
+                            Icon(
                               Icons.person_add,
                               color: Colors.black,
                               size: 24.0,
@@ -94,51 +94,6 @@ class AuthPage extends StatelessWidget {
                               builder: (context) => EmailSignUpPage(),
                             ),
                           );
-                        },
-                      ),
-                    ),
-
-                    // LINEログイン
-                    Container(
-                      width: 300,
-                      margin: const EdgeInsets.all(10),
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.green,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.chat_bubble, // LINEアイコンの代替
-                              color: Colors.white,
-                              size: 24.0,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Center(
-                                child: const Text(
-                                  'LINEでログイン',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        onPressed: () async {
-                          try {
-                            await context.read<AuthViewModel>().signInWithLineWeb();
-                            Navigator.pushReplacement(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => MainScreen(),
-                              ),
-                            );
-                          } catch (e) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text('LINEログインに失敗しました: $e')),
-                            );
-                          }
                         },
                       ),
                     ),
