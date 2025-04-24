@@ -113,7 +113,7 @@ class _ShopScreenState extends State<ShopScreen> {
               ),
             ),
 
-            // 来店予定リスト
+            // 出品と購入を分けて表示
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: isAdmin
@@ -133,77 +133,106 @@ class _ShopScreenState extends State<ShopScreen> {
                     return const Center(child: Text("来店予定はありません(No visit schedule)"));
                   }
 
-                  var visits = snapshot.data!.docs;
+                  var visits = snapshot.data!.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+                  var listings = visits.where((visit) => visit['visitType'] == 'listing').toList();
+                  var purchases = visits.where((visit) => visit['visitType'] == 'purchase').toList();
+                  var cancellations = visits.where((visit) => visit['visitType'] == 'cancel').toList();
 
-                  return ListView.builder(
-                    itemCount: visits.length,
-                    itemBuilder: (context, index) {
-                      var visit = visits[index].data() as Map<String, dynamic>;
-                      String? productId = visit['productId'];
-
-                      // アイコンと色、タグを決定
-                      IconData iconData;
-                      Color color;
-                      String tag;
-                      if (visit['pickupMethod'] == '仲介(Mediation)') {
-                        iconData = Icons.handshake; // 仲介用のアイコン
-                        color = Colors.blue;
-                        tag = "仲介(Mediation)";
-                      } else if (visit['visitType'] == 'purchase') {
-                        iconData = Icons.shopping_cart;
-                        color = Colors.green;
-                        tag = "購入予定(Purchase)";
-                      } else if (visit['visitType'] == 'cancel') {
-                        iconData = Icons.cancel;
-                        color = Colors.red;
-                        tag = "キャンセル待ち(Cancel)";
-                      } else {
-                        iconData = Icons.store;
-                        color = Colors.orange;
-                        tag = "出品予定(Listing)";
-                      }
-
-                      return Card(
-                        margin: const EdgeInsets.all(8),
-                        child: ListTile(
-                          leading: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(iconData, color: color),
-                              const SizedBox(height: 4),
-                              Text(tag,
-                                  style: TextStyle(
-                                      color: color,
-                                      fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                          title: Text(visit['product'] ?? '商品名なし(No product name)'),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text("来店予定日(Scheduled visit date): ${visit['visitDate']}"),
-                              Text("受け取り方法(Pickup Method): ${visit['pickupMethod'] ?? '未設定(Unset)'}"), // 受け取り方法を表示
-                              if (isAdmin) Text("ユーザー(UserName): ${visit['userName']}"),
-                            ],
-                          ),
-                          trailing: const Icon(Icons.arrow_forward),
-                          onTap: productId != null
-                              ? () => _navigateToDetail(productId)
-                              : () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text('商品情報が見つかりません(Product information not found)')),
-                                  );
-                                },
+                  return ListView(
+                    children: [
+                      // 出品リスト
+                      if (listings.isNotEmpty) ...[
+                        const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text("出品リスト(Listings)", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                         ),
-                      );
-                    },
+                        ...listings.map((visit) => _buildVisitCard(visit, isAdmin)),
+                      ],
+
+                      // 購入リスト
+                      if (purchases.isNotEmpty) ...[
+                        const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text("購入リスト(Purchases)", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        ),
+                        ...purchases.map((visit) => _buildVisitCard(visit, isAdmin)),
+                      ],
+
+                      // キャンセル待ちリスト
+                      if (cancellations.isNotEmpty) ...[
+                        const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text("キャンセル待ちリスト(Cancellations)", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        ),
+                        ...cancellations.map((visit) => _buildVisitCard(visit, isAdmin)),
+                      ],
+                    ],
                   );
                 },
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildVisitCard(Map<String, dynamic> visit, bool isAdmin) {
+    String? productId = visit['productId'];
+
+    // アイコンと色、タグを決定
+    IconData iconData;
+    Color color;
+    String tag;
+    if (visit['visitType'] == 'cancel') {
+      iconData = Icons.cancel; // キャンセル待ち用のアイコン
+      color = Colors.red;
+      tag = "キャンセル待ち(Cancel)";
+    } else if (visit['pickupMethod'] == '仲介(Mediation)') {
+      iconData = Icons.handshake; // 仲介用のアイコン
+      color = Colors.blue;
+      tag = "仲介(Mediation)";
+    } else if (visit['pickupMethod'] == '配送(Delivery)') {
+      iconData = Icons.local_shipping; // 配送用のアイコン
+      color = Colors.purple;
+      tag = "配送(Delivery)";
+    } else if (visit['pickupMethod'] == '店舗受け取り(Store Pickup)') {
+      iconData = Icons.store; // 店舗受け取り用のアイコン
+      color = Colors.orange;
+      tag = "店舗受け取り(Store Pickup)";
+    } else {
+      iconData = Icons.help; // 不明な場合のアイコン
+      color = Colors.grey;
+      tag = "未設定(Unset)";
+    }
+
+    return Card(
+      margin: const EdgeInsets.all(8),
+      child: ListTile(
+        leading: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(iconData, color: color),
+            const SizedBox(height: 4),
+            Text(tag, style: TextStyle(color: color, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        title: Text(visit['product'] ?? '商品名なし(No product name)'),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text("来店予定日(Scheduled visit date): ${visit['visitDate']}"),
+            if (isAdmin) Text("ユーザー(UserName): ${visit['userName']}"),
+          ],
+        ),
+        trailing: const Icon(Icons.arrow_forward),
+        onTap: productId != null
+            ? () => _navigateToDetail(productId)
+            : () {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('商品情報が見つかりません(Product information not found)')),
+                );
+              },
       ),
     );
   }

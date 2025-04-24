@@ -33,7 +33,7 @@ class ShopVisit {
       product: data['product'] ?? '商品名なし(No Product Name)',
       visitDate: data['visitDate'] ?? '未設定(Unset)',
       store: data['store'] ?? '未設定(Unset)',
-      visitType: data['visitType'] ?? '不明(Unknown)',
+      visitType: data['visitType'] ?? '不明(Unknown)', // キャンセル待ちも含む
       pickupMethod: data['pickupMethod'] ?? '未設定(Unset)', // 受け取り方法を追加
       createdAt: data['createdAt'] ?? Timestamp.now(),
     );

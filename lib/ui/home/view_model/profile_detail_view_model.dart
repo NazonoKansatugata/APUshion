@@ -21,6 +21,19 @@ class ProfileDetailViewModel extends ChangeNotifier {
 
   Future<void> purchaseItem(
       BuildContext context, String documentId, Map<String, dynamic>? profileData) async {
+    final transactionType = profileData?['transactionType'] ?? '買取(Purchase)';
+    if (transactionType == '仲介(Mediation)') {
+      _showMediationPurchaseDialog(context, documentId, profileData);
+    } else {
+      _showPurchaseDialog(context, documentId, profileData);
+    }
+  }
+
+  void _showMediationPurchaseDialog(BuildContext context, String documentId, Map<String, dynamic>? profileData) {
+    // 仲介用購入ダイアログのロジックをここに記述
+  }
+
+  void _showPurchaseDialog(BuildContext context, String documentId, Map<String, dynamic>? profileData) {
     final TextEditingController visitDateController = TextEditingController();
 
     showDialog(
