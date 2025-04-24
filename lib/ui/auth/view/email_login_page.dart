@@ -4,6 +4,7 @@ import 'package:provider/provider.dart'; // Providerパッケージ
 
 import 'package:apusion/ui/home/home_page.dart';
 import 'package:apusion/ui/auth/view_model/auth_view_model.dart';
+import 'package:apusion/ui/user/user_profile_edit_page.dart';
 import '../../components/background_animation.dart';
 
 class EmailLoginPage extends StatefulWidget {
@@ -40,10 +41,10 @@ class _EmailLoginPage extends State<EmailLoginPage> {
       if (authVM.currentUser != null) {
         print("ログイン成功: ${authVM.currentUser!.toJson()}");
 
-        // 運営判定 (画面遷移は共通で MainScreen)
+        // UserProfileEditPageに遷移
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => MainScreen()),
+          MaterialPageRoute(builder: (context) => const UserProfileEditPage()),
         );
       }
     } on FirebaseAuthException catch (e) {

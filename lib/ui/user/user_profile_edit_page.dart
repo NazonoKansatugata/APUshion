@@ -126,7 +126,6 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
                           return null;
                         },
                       ),
-
                       const SizedBox(height: 20),
                       TextFormField(
                         controller: _fullNameController,
@@ -134,6 +133,12 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
                           labelText: '本名（Full Name）',
                           border: OutlineInputBorder(),
                         ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return '本名を入力してください(Please enter your full name)';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
@@ -142,6 +147,12 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
                           labelText: '住所（Address）',
                           border: OutlineInputBorder(),
                         ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return '住所を入力してください(Please enter your address)';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
@@ -150,8 +161,13 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
                           labelText: '電話番号（Phone Number）',
                           border: OutlineInputBorder(),
                         ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return '電話番号を入力してください(Please enter your phone number)';
+                          }
+                          return null;
+                        },
                       ),
-
                       const SizedBox(height: 20),
                       TextField(
                         controller: _photoURLController,
@@ -187,6 +203,8 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('プロフィールを更新しました')),
                               );
+                              // 更新後にmain.dartに遷移
+                              Navigator.pushReplacementNamed(context, '/');
                             } catch (e) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('更新に失敗しました: $e')),

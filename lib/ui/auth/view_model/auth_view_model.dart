@@ -10,7 +10,7 @@ class AuthViewModel extends ChangeNotifier {
   UserModel? currentUser;
 
 
-  static const String adminUid = '0jbF0jcGAaeWyOiZ75LzFbmfQK22';
+  static const String adminUid = 'qt8Y9nviUobYh2ktkNA9iAKPyae2';
 
   bool isAdmin() {
     return currentUser != null && currentUser!.uid == adminUid;
