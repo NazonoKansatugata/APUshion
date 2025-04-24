@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:apusion/model/user_model.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter_web_auth/flutter_web_auth.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
+
 
 class AuthViewModel extends ChangeNotifier {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
 
   UserModel? currentUser;
+
 
   static const String adminUid = '0jbF0jcGAaeWyOiZ75LzFbmfQK22';
 
@@ -28,7 +27,7 @@ class AuthViewModel extends ChangeNotifier {
         currentUser = await _convertToUserModel(user);
         await storeUserProfile(currentUser!);
       }
-    } catch (e) {
+    } catch (e, st) {
       rethrow;
     }
     notifyListeners();
@@ -46,7 +45,7 @@ class AuthViewModel extends ChangeNotifier {
         currentUser = await _convertToUserModel(user);
         await storeUserProfile(currentUser!);
       }
-    } catch (e) {
+    } catch (e, st) {
       rethrow;
     }
     notifyListeners();
@@ -73,7 +72,10 @@ class AuthViewModel extends ChangeNotifier {
       final userRef =
           FirebaseFirestore.instance.collection('users').doc(user.uid);
       await userRef.set(usermodel.toJson());
-      await userRef.collection('likedProfiles').doc('null').set({});
+      await userRef
+          .collection('likedProfiles')
+          .doc('null')
+          .set({});
     }
     notifyListeners();
   }
@@ -105,127 +107,45 @@ class AuthViewModel extends ChangeNotifier {
 
   /// ユーザーのプロフィール情報（name, photoURL）を更新する処理
   Future<void> updateUserProfile({
-    String? name,
-    String? photoURL,
-    String? fullName,
-    String? address,
-    String? phoneNumber,
-  }) async {
-    final user = _firebaseAuth.currentUser;
-    if (user != null) {
-      if (name != null || photoURL != null) {
-        await user.updateProfile(
-          displayName: name ?? user.displayName,
-          photoURL: photoURL ?? user.photoURL,
-        );
-        await user.reload();
-      }
-
-      final userRef =
-          FirebaseFirestore.instance.collection('users').doc(user.uid);
-      final Map<String, dynamic> updatedData = {};
-      if (name != null) updatedData['name'] = name;
-      if (photoURL != null) updatedData['photoURL'] = photoURL;
-      if (fullName != null) updatedData['fullName'] = fullName;
-      if (address != null) updatedData['address'] = address;
-      if (phoneNumber != null) updatedData['phoneNumber'] = phoneNumber;
-
-      if (updatedData.isNotEmpty) {
-        await userRef.update(updatedData);
-      }
-
-      // currentUser にも反映（nullチェック済み）
-      if (currentUser != null) {
-        currentUser!.name = name ?? currentUser!.name;
-        currentUser!.photoURL = photoURL ?? currentUser!.photoURL;
-        currentUser!.fullName = fullName ?? currentUser!.fullName;
-        currentUser!.address = address ?? currentUser!.address;
-        currentUser!.phoneNumber = phoneNumber ?? currentUser!.phoneNumber;
-      }
-
-      notifyListeners();
+  String? name,
+  String? photoURL,
+  String? fullName,
+  String? address,
+  String? phoneNumber,
+}) async {
+  final user = _firebaseAuth.currentUser;
+  if (user != null) {
+    if (name != null || photoURL != null) {
+      await user.updateProfile(
+        displayName: name ?? user.displayName,
+        photoURL: photoURL ?? user.photoURL,
+      );
+      await user.reload();
     }
-  }
 
-  /// LINEログイン (Web用)
-  Future<void> signInWithLineWeb() async {
-    try {
-      // FirestoreからLINE設定を取得
-      final settingsDoc = await FirebaseFirestore.instance.collection('settings').doc('line').get();
-      final settings = settingsDoc.data();
+    final userRef =
+        FirebaseFirestore.instance.collection('users').doc(user.uid);
+    final Map<String, dynamic> updatedData = {};
+    if (name != null) updatedData['name'] = name;
+    if (photoURL != null) updatedData['photoURL'] = photoURL;
+    if (fullName != null) updatedData['fullName'] = fullName;
+    if (address != null) updatedData['address'] = address;
+    if (phoneNumber != null) updatedData['phoneNumber'] = phoneNumber;
 
-      if (settings == null || !settings.containsKey('LINE_CHANNEL_ID') || !settings.containsKey('LINE_REDIRECT_URI')) {
-        throw Exception("FirestoreにLINE設定が見つかりません。");
-      }
-
-      final clientId = settings['LINE_CHANNEL_ID'];
-      final redirectUri = settings['LINE_REDIRECT_URI'];
-      final state = "random_state_string"; // CSRF対策用のランダムな文字列
-
-      final authUrl = Uri.https("access.line.me", "/oauth2/v2.1/authorize", {
-        "response_type": "code",
-        "client_id": clientId,
-        "redirect_uri": redirectUri,
-        "state": state,
-        "scope": "profile openid email",
-      }).toString();
-
-      // Webブラウザで認証を開始
-      final result = await FlutterWebAuth.authenticate(
-        url: authUrl,
-        callbackUrlScheme: Uri.parse(redirectUri).scheme,
-      );
-
-      // 認証コードを取得
-      final code = Uri.parse(result).queryParameters['code'];
-      if (code == null) {
-        throw Exception("認証コードが取得できませんでした。");
-      }
-
-      // LINEのアクセストークンを取得
-      final tokenResponse = await http.post(
-        Uri.parse("https://api.line.me/oauth2/v2.1/token"),
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: {
-          "grant_type": "authorization_code",
-          "code": code,
-          "redirect_uri": redirectUri,
-          "client_id": clientId,
-          "client_secret": settings['LINE_CLIENT_SECRET'], // Firestoreに保存されたクライアントシークレット
-        },
-      );
-
-      if (tokenResponse.statusCode != 200) {
-        throw Exception("LINEアクセストークンの取得に失敗しました: ${tokenResponse.body}");
-      }
-
-      final tokenData = json.decode(tokenResponse.body);
-      final accessToken = tokenData['access_token'];
-
-      // Firebase カスタムトークンを取得
-      final customTokenResponse = await http.post(
-        Uri.parse("https://<YOUR_FIREBASE_FUNCTIONS_URL>/generateCustomToken"), // デプロイしたFirebase FunctionsのURL
-        headers: {
-          "Authorization": "Bearer $accessToken",
-        },
-      );
-
-      if (customTokenResponse.statusCode != 200) {
-        throw Exception("Firebaseカスタムトークンの取得に失敗しました: ${customTokenResponse.body}");
-      }
-
-      final customToken = json.decode(customTokenResponse.body)['customToken'];
-
-      // Firebase にログイン
-      await _firebaseAuth.signInWithCustomToken(customToken);
-
-      // ユーザー情報を取得
-      await fetchUser();
-    } catch (e) {
-      print("LINEログインエラー: $e");
-      rethrow;
+    if (updatedData.isNotEmpty) {
+      await userRef.update(updatedData);
     }
+
+    // currentUser にも反映（nullチェック済み）
+    if (currentUser != null) {
+      currentUser!.name = name ?? currentUser!.name;
+      currentUser!.photoURL = photoURL ?? currentUser!.photoURL;
+      currentUser!.fullName = fullName ?? currentUser!.fullName;
+      currentUser!.address = address ?? currentUser!.address;
+      currentUser!.phoneNumber = phoneNumber ?? currentUser!.phoneNumber;
+    }
+
+    notifyListeners();
   }
+}
 }
