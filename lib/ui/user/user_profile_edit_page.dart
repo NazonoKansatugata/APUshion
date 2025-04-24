@@ -89,6 +89,19 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
       });
     }
 
+    Future<void> _sendVerificationEmail() async {
+      try {
+        await authViewModel.sendEmailVerification();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('認証メールを送信しました。メールを確認してください。')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('認証メールの送信に失敗しました: $e')),
+        );
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('プロフィール編集'),
@@ -180,6 +193,20 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
                         onPressed: () => _pickImage(_photoURLController),
                         child: Text('ファイルを選択'),
                       ),
+                      if (user.isEmailVerified == false)
+                        Column(
+                          children: [
+                            const Text(
+                              'メールアドレスが未認証です。',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                            const SizedBox(height: 8),
+                            ElevatedButton(
+                              onPressed: _sendVerificationEmail,
+                              child: const Text('認証メールを送信'),
+                            ),
+                          ],
+                        ),
                       const SizedBox(height: 24),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(

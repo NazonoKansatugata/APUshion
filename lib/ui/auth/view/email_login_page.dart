@@ -41,11 +41,8 @@ class _EmailLoginPage extends State<EmailLoginPage> {
       if (authVM.currentUser != null) {
         print("ログイン成功: ${authVM.currentUser!.toJson()}");
 
-        // UserProfileEditPageに遷移
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const UserProfileEditPage()),
-        );
+        // main.dartに遷移
+        Navigator.pushReplacementNamed(context, '/');
       }
     } on FirebaseAuthException catch (e) {
       setState(() {

@@ -148,4 +148,12 @@ class AuthViewModel extends ChangeNotifier {
     notifyListeners();
   }
 }
+
+  /// メールアドレス認証メールを送信
+  Future<void> sendEmailVerification() async {
+    final user = _firebaseAuth.currentUser;
+    if (user != null && !user.emailVerified) {
+      await user.sendEmailVerification();
+    }
+  }
 }
