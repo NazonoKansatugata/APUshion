@@ -12,6 +12,7 @@ class Product {
   String store;
   String visitDate;
   String condition; // 商品の状態を追加
+  String transactionType; // 取引タイプを追加
   Timestamp createdAt;
   Timestamp updatedAt;
 
@@ -27,6 +28,7 @@ class Product {
     required this.store,
     required this.visitDate,
     required this.condition, // 商品の状態を追加
+    required this.transactionType, // 取引タイプを追加
     required this.createdAt,
     required this.updatedAt,
   });
@@ -45,6 +47,7 @@ class Product {
       store: data['store'] ?? '未設定(Unset)',
       visitDate: data['visitDate'] ?? '未設定(Unset)',
       condition: data['condition'] ?? '未設定(Unset)', // デフォルト値を設定
+      transactionType: data['transactionType'] ?? '仲介(Mediation)', // デフォルト値を設定
       createdAt: data['createdAt'] ?? Timestamp.now(),
       updatedAt: data['updatedAt'] ?? Timestamp.now(),
     );
@@ -62,6 +65,7 @@ class Product {
       'store': store,
       'visitDate': visitDate,
       'condition': condition, // 商品の状態を追加
+      'transactionType': transactionType, // 取引タイプを追加
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };

@@ -145,7 +145,11 @@ class _ShopScreenState extends State<ShopScreen> {
                       IconData iconData;
                       Color color;
                       String tag;
-                      if (visit['visitType'] == 'purchase') {
+                      if (visit['pickupMethod'] == '仲介(Mediation)') {
+                        iconData = Icons.handshake; // 仲介用のアイコン
+                        color = Colors.blue;
+                        tag = "仲介(Mediation)";
+                      } else if (visit['visitType'] == 'purchase') {
                         iconData = Icons.shopping_cart;
                         color = Colors.green;
                         tag = "購入予定(Purchase)";

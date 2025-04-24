@@ -131,6 +131,7 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
     'store': storeController.text,
     'createdAt': Timestamp.now(),
     'updatedAt': Timestamp.now(),
+    'transactionType': selectedTransactionType, // 取引タイプを追加
   };
 
   try {
@@ -166,7 +167,9 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
       'store': storeController.text,
       'visitDate': visitDateController.text,
       'visitType': 'listing',
-      'pickupMethod': selectedPickupMethod, // 受け取り方法を追加
+      'pickupMethod': selectedTransactionType == '仲介(Mediation)' 
+          ? '仲介(Mediation)' 
+          : selectedPickupMethod, // 仲介の場合はpickupMethodを仲介に設定
       'createdAt': Timestamp.now(),
     };
 
@@ -191,6 +194,7 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
       'status': status,
       'store': storeController.text,
       'updatedAt': Timestamp.now(),
+      'transactionType': selectedTransactionType, // 取引タイプを追加
     };
 
     try {
@@ -273,6 +277,7 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
       selectedCategory = initialProfileData['category'] ?? selectedCategory; // カテゴリを初期化
       selectedCondition = initialProfileData['condition'] ?? selectedCondition;
       selectedPickupMethod = initialProfileData['pickupMethod'] ?? selectedPickupMethod;
+      selectedTransactionType = initialProfileData['transactionType'] ?? selectedTransactionType; // 取引タイプを初期化
       imageUrls = List<String>.from(initialProfileData['imageUrls'] ?? []);
       storeController.text = initialProfileData['store'] ?? '本店';
       visitDateController.text = initialProfileData['visitDate'] ?? ''; // 来店予定日を初期化
