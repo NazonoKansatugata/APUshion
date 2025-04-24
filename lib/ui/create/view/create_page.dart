@@ -139,26 +139,6 @@ class CreateScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
-                Row(
-                  children: [
-                    ElevatedButton(
-                      onPressed: () {
-                        _showAgreementDialog(context);
-                      },
-                      child: const Text("同意書を見る(View Agreement)"),
-                    ),
-                    const SizedBox(width: 20),
-                    Checkbox(
-                      value: viewModel.isAgreementChecked,
-                      onChanged: (bool? value) {
-                        viewModel.toggleAgreementChecked(value!);
-                      },
-                    ),
-                    const Text("同意する(Agree)"),
-                  ],
-                ),
-                const SizedBox(height: 20),
-
                 if (viewModel.selectedTransactionType == '買取(Purchase)') ...[
                   DropdownButtonFormField<String>(
                     value: viewModel.selectedPickupMethod.isNotEmpty ? viewModel.selectedPickupMethod : null,
@@ -215,6 +195,26 @@ class CreateScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 20),
                 ],
+
+                Row(
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        _showAgreementDialog(context);
+                      },
+                      child: const Text("同意書を見る(View Agreement)"),
+                    ),
+                    const SizedBox(width: 20),
+                    Checkbox(
+                      value: viewModel.isAgreementChecked,
+                      onChanged: (bool? value) {
+                        viewModel.toggleAgreementChecked(value!);
+                      },
+                    ),
+                    const Text("同意する(Agree)"),
+                  ],
+                ),
+                const SizedBox(height: 20),
 
                 Center(
                   child: ElevatedButton(
