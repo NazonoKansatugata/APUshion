@@ -60,18 +60,60 @@ class _EmailLoginPage extends State<EmailLoginPage> {
     }
   }
 
-  /// パスワードリセット
-  Future<void> _resetPassword() async {
-    final authVM = context.read<AuthViewModel>();
+  /// パスワードリセット用ダイアログを表示
+  Future<void> _showResetPasswordDialog() async {
+    final TextEditingController resetEmailController = TextEditingController();
 
-    try {
-      await authVM.resetPassword(emailController.text);
-      print("${emailController.text} へパスワードリセットメールを送信しました");
-    } on FirebaseAuthException catch (e) {
-      print('パスワードリセット失敗: $e');
-    } catch (e) {
-      print('不明なエラーです: $e');
-    }
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('パスワードリセット'),
+          content: TextField(
+            controller: resetEmailController,
+            decoration: const InputDecoration(
+              labelText: '登録済みのメールアドレスを入力してください',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('キャンセル'),
+            ),
+            TextButton(
+              onPressed: () async {
+                final email = resetEmailController.text.trim();
+                if (email.isNotEmpty) {
+                  try {
+                    await _resetPassword(email);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('パスワードリセットメールを送信しました')),
+                    );
+                    Navigator.pop(context);
+                  } catch (e) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('エラーが発生しました: $e')),
+                    );
+                  }
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('メールアドレスを入力してください')),
+                  );
+                }
+              },
+              child: const Text('送信'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// パスワードリセット
+  Future<void> _resetPassword(String email) async {
+    final authVM = context.read<AuthViewModel>();
+    await authVM.resetPassword(email);
   }
 
   @override
@@ -127,8 +169,8 @@ class _EmailLoginPage extends State<EmailLoginPage> {
                   onPressed: _login,
                 ),
                 ElevatedButton(
-                  onPressed: _resetPassword,
-                  child: const Text('パスワードリセット'),
+                  onPressed: _showResetPasswordDialog,
+                  child: const Text('パスワードを忘れた場合'),
                 ),
                 if (errorMessage.isNotEmpty)
                   Padding(
