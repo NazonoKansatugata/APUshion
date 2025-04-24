@@ -20,15 +20,7 @@ class CreateScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) {
         final viewModel = CreateScreenViewModel();
-        if (initialProfileData != null) {
-          viewModel.nameController.text = initialProfileData!['name'] ?? '';
-          viewModel.descriptionController.text = initialProfileData!['description'] ?? '';
-          viewModel.priceController.text = initialProfileData!['price']?.toString() ?? '';
-          viewModel.selectedCategory = initialProfileData!['category'] ?? '';
-          viewModel.imageUrls = List<String>.from(initialProfileData!['imageUrls'] ?? []);
-          viewModel.storeController.text = initialProfileData!['store'] ?? '本店';
-          viewModel.visitDateController.text = initialProfileData!['visitDate'] ?? '';
-        }
+        viewModel.initializeData(initialProfileData); // 初期データを設定
         return viewModel;
       },
       child: Scaffold(
@@ -59,7 +51,7 @@ class CreateScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 DropdownButtonFormField<String>(
-                  value: viewModel.selectedCategory,
+                  value: viewModel.selectedCategory, // カテゴリの初期値を反映
                   items: ['電子レンジ(microwave oven)', '冷蔵庫(refrigerator)', '洗濯機(washing machine)', 'その他(others)'].map((category) {
                     return DropdownMenuItem(value: category, child: Text(category));
                   }).toList(),
@@ -143,7 +135,7 @@ class CreateScreen extends StatelessWidget {
 
                 // 来店予定日または希望到着日の入力
                 TextFormField(
-                  controller: viewModel.visitDateController,
+                  controller: viewModel.visitDateController, // 来店予定日の初期値を反映
                   decoration: InputDecoration(
                     labelText: viewModel.selectedPickupMethod == '配送(Delivery)'
                         ? '希望到着日(Desired Delivery Date)'

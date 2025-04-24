@@ -264,6 +264,21 @@ Future<void> submitProfile(BuildContext context, bool isAdmin) async {
     }
   }
 
+  void initializeData(Map<String, dynamic>? initialProfileData) {
+    if (initialProfileData != null) {
+      nameController.text = initialProfileData['name'] ?? '';
+      descriptionController.text = initialProfileData['description'] ?? '';
+      priceController.text = initialProfileData['price']?.toString() ?? '';
+      selectedCategory = initialProfileData['category'] ?? selectedCategory; // カテゴリを初期化
+      selectedCondition = initialProfileData['condition'] ?? selectedCondition;
+      selectedPickupMethod = initialProfileData['pickupMethod'] ?? selectedPickupMethod;
+      imageUrls = List<String>.from(initialProfileData['imageUrls'] ?? []);
+      storeController.text = initialProfileData['store'] ?? '本店';
+      visitDateController.text = initialProfileData['visitDate'] ?? ''; // 来店予定日を初期化
+    }
+    notifyListeners();
+  }
+
   @override
   void dispose() {
     nameController.dispose();
