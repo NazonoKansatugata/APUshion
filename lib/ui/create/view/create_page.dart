@@ -219,8 +219,9 @@ class CreateScreen extends StatelessWidget {
                 Center(
                   child: ElevatedButton(
                     onPressed: viewModel.isAgreementChecked &&
-                               viewModel.visitDateController.text.isNotEmpty &&
-                               viewModel.nameController.text.isNotEmpty
+                               viewModel.nameController.text.isNotEmpty &&
+                               (viewModel.selectedTransactionType == '仲介(Mediation)' || 
+                                viewModel.visitDateController.text.isNotEmpty) // 仲介の場合は来店予定日を必須から除外
                         ? () async {
                             if (viewModel.selectedPickupMethod == '配送(Delivery)') {
                               final user = FirebaseAuth.instance.currentUser;
