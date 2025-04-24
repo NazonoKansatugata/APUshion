@@ -15,6 +15,7 @@ class CreateScreenViewModel extends ChangeNotifier {
   String selectedCategory = '電子レンジ(microwave oven)';
   String selectedCondition = '新品(New)'; // 初期値を設定
   String selectedPickupMethod = '店舗受け取り(Store Pickup)'; // 初期値を設定
+  String selectedTransactionType = '仲介(Mediation)';
   List<String> imageUrls = [];
   bool isUploading = false;
 

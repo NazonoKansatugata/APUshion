@@ -105,63 +105,6 @@ class CreateScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
-                // 配送と店舗受け取りの選択
-                DropdownButtonFormField<String>(
-                  value: viewModel.selectedPickupMethod,
-                  items: [
-                    DropdownMenuItem(
-                      value: '店舗受け取り(Store Pickup)',
-                      child: Text('店舗受け取り(Store Pickup)'),
-                    ),
-                    DropdownMenuItem(
-                      value: '配送(Delivery)',
-                      child: Text('配送(Delivery)'),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    viewModel.selectedPickupMethod = value!;
-                  },
-                  decoration: const InputDecoration(labelText: '受け取り方法(Pickup Method)'),
-                ),
-                if (viewModel.selectedPickupMethod == '配送(Delivery)')
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Text(
-                      '配送には500~1000円の送料がかかります(Delivery incurs a shipping fee of ¥500~¥1000)',
-                      style: TextStyle(color: Colors.red, fontSize: 14),
-                    ),
-                  ),
-                const SizedBox(height: 20),
-
-                // 来店予定日または希望到着日の入力
-                TextFormField(
-                  controller: viewModel.visitDateController, // 来店予定日の初期値を反映
-                  decoration: InputDecoration(
-                    labelText: viewModel.selectedPickupMethod == '配送(Delivery)'
-                        ? '希望到着日(Desired Delivery Date)'
-                        : '来店予定日(Visit Date)',
-                    suffixIcon: GestureDetector(
-                      onTap: () async {
-                        DateTime? selectedDate = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now().add(Duration(days: (DateTime.wednesday - DateTime.now().weekday + 7) % 7)), // 次の水曜日
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime(2101),
-                          selectableDayPredicate: (date) {
-                            return date.weekday == DateTime.wednesday; // 水曜日のみ選択可能
-                          },
-                        );
-                        if (selectedDate != null) {
-                          viewModel.visitDateController.text = "${selectedDate.toLocal()}".split(' ')[0];
-                        }
-                      },
-                      child: Icon(Icons.calendar_today),
-                    ),
-                  ),
-                  readOnly: true,
-                ),
-                const SizedBox(height: 20),
-
                 DropdownButtonFormField<String>(
                   value: viewModel.storeController.text.isNotEmpty
                       ? viewModel.storeController.text
@@ -173,6 +116,26 @@ class CreateScreen extends StatelessWidget {
                     viewModel.storeController.text = value!;
                   },
                   decoration: InputDecoration(labelText: isAdmin ? "取り扱い店舗(Store)" : "来店店舗(Visit Store)"),
+                ),
+                const SizedBox(height: 20),
+
+                DropdownButtonFormField<String>(
+                  value: viewModel.selectedTransactionType,
+                  items: [
+                    DropdownMenuItem(
+                      value: '買取(Purchase)',
+                      child: Text('買取(Purchase)'),
+                    ),
+                    DropdownMenuItem(
+                      value: '仲介(Mediation)',
+                      child: Text('仲介(Mediation)'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    viewModel.selectedTransactionType = value!;
+                    viewModel.notifyListeners(); // 状態を更新
+                  },
+                  decoration: const InputDecoration(labelText: '取引タイプ(Transaction Type)'),
                 ),
                 const SizedBox(height: 20),
 
@@ -195,6 +158,63 @@ class CreateScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 20),
+
+                if (viewModel.selectedTransactionType == '買取(Purchase)') ...[
+                  DropdownButtonFormField<String>(
+                    value: viewModel.selectedPickupMethod.isNotEmpty ? viewModel.selectedPickupMethod : null,
+                    items: [
+                      DropdownMenuItem(
+                        value: '店舗受け取り(Store Pickup)',
+                        child: Text('店舗受け取り(Store Pickup)'),
+                      ),
+                      DropdownMenuItem(
+                        value: '配送(Delivery)',
+                        child: Text('配送(Delivery)'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      viewModel.selectedPickupMethod = value!;
+                      viewModel.notifyListeners(); // 状態を更新
+                    },
+                    decoration: const InputDecoration(labelText: '受け取り方法(Pickup Method)'),
+                  ),
+                  if (viewModel.selectedPickupMethod == '配送(Delivery)')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Text(
+                        '配送には500~1000円の送料がかかります(Delivery incurs a shipping fee of ¥500~¥1000)',
+                        style: TextStyle(color: Colors.red, fontSize: 14),
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: viewModel.visitDateController,
+                    decoration: InputDecoration(
+                      labelText: viewModel.selectedPickupMethod == '配送(Delivery)'
+                          ? '希望到着日(Desired Delivery Date)'
+                          : '来店予定日(Visit Date)',
+                      suffixIcon: GestureDetector(
+                        onTap: () async {
+                          DateTime? selectedDate = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now().add(Duration(days: (DateTime.wednesday - DateTime.now().weekday + 7) % 7)),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2101),
+                            selectableDayPredicate: (date) {
+                              return date.weekday == DateTime.wednesday;
+                            },
+                          );
+                          if (selectedDate != null) {
+                            viewModel.visitDateController.text = "${selectedDate.toLocal()}".split(' ')[0];
+                          }
+                        },
+                        child: Icon(Icons.calendar_today),
+                      ),
+                    ),
+                    readOnly: true,
+                  ),
+                  const SizedBox(height: 20),
+                ],
 
                 Center(
                   child: ElevatedButton(
