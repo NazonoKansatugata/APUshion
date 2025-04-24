@@ -134,6 +134,9 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                     child: Text('カレンダーで日付を選択(Select dates from calendar)'),
                   ),
                   SizedBox(height: 10),
+                  if (selectedDates.isNotEmpty)
+                    _buildSelectedDatesTable(selectedDates), // 選択した日付を表形式で表示
+                  SizedBox(height: 10),
                   ElevatedButton(
                     onPressed: () {
                       showDialog(
@@ -186,17 +189,21 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                     }
 
                     try {
+                      // shopVisits にデータを追加
                       await FirebaseFirestore.instance.collection('shopVisits').add({
                         'userId': currentUserId,
                         'userName': FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー(Anonymous)',
                         'visitDates': selectedDates.map((date) => date?.toLocal().toString().split(' ')[0]).toList(),
                         'product': profileData?['name'] ?? '商品名なし(Product name not available)',
                         'productId': widget.documentId,
-                        'visitType': 'purchase',
+                        'visitType': 'Mediation', // 仲介として設定
                         'createdAt': Timestamp.now(),
                       });
 
-                      await FirebaseFirestore.instance.collection('profiles').doc(widget.documentId).update({'status': '購入済み(Purchased)'});
+                      // profiles のステータスを更新
+                      await FirebaseFirestore.instance.collection('profiles').doc(widget.documentId).update({
+                        'status': '仲介(Mediation)', // ステータスを仲介に設定
+                      });
 
                       setState(() {
                         isPurchased = true;
@@ -221,6 +228,33 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
           },
         );
       },
+    );
+  }
+
+  // 選択した日付を表形式で表示
+  Widget _buildSelectedDatesTable(List<DateTime?> selectedDates) {
+    return Table(
+      border: TableBorder.all(color: Colors.grey),
+      children: [
+        TableRow(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text('日付(Date)', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        ...selectedDates.map(
+          (date) => TableRow(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text("${date?.toLocal()}".split(' ')[0]),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -764,6 +798,77 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
     );
   }
 
+  // 選択した日付を表形式で表示し、運営が選択可能にする
+  Widget _buildAdminSelectableDatesTable(List<DateTime?> selectedDates, Function(DateTime) onDateSelected) {
+    return Table(
+      border: TableBorder.all(color: Colors.grey),
+      children: [
+        TableRow(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text('日付(Date)', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text('選択(Select)', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        ...selectedDates.map(
+          (date) => TableRow(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text("${date?.toLocal()}".split(' ')[0]),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: ElevatedButton(
+                  onPressed: () {
+                    onDateSelected(date!);
+                  },
+                  child: Text("選択(Select)"),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // 運営が来店予定日を選択する処理
+  void _handleAdminDateSelection(DateTime selectedDate) async {
+    try {
+      await FirebaseFirestore.instance.collection('shopVisits').add({
+        'userId': currentUserId,
+        'userName': FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー(Anonymous)',
+        'visitDate': selectedDate.toLocal().toString().split(' ')[0],
+        'product': profileData?['name'] ?? '商品名なし(Product name not available)',
+        'productId': widget.documentId,
+        'visitType': 'Mediation', // 仲介として設定
+        'createdAt': Timestamp.now(),
+      });
+
+      await FirebaseFirestore.instance.collection('profiles').doc(widget.documentId).update({
+        'status': '仲介(Mediation)', // ステータスを仲介に設定
+      });
+
+      setState(() {
+        profileData?['status'] = '仲介(Mediation)';
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("日付が選択されました(Date selected)")),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("エラーが発生しました: $e")),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authVM = context.watch<AuthViewModel>();
@@ -825,8 +930,20 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                         padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                       ),
                       child: Text("キャンセルを承認(Approve Cancellation)", style: TextStyle(fontSize: 16, color: Colors.white)),
-                    )
-                  else if (isAdmin || status == "下書き(draft)") // 一般ユーザーでも下書きの場合は編集可能
+                    ),
+                  if (isAdmin && status == "仲介(Mediation)")
+                    ElevatedButton(
+                      onPressed: () {
+                        _showAdminDateSelectionDialog();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                      ),
+                      child: Text("来店予定日を選択(Select Visit Date)", style: TextStyle(fontSize: 16, color: Colors.white)),
+                    ),
+                  if (isAdmin || status == "下書き(draft)") // 一般ユーザーでも下書きの場合は編集可能
                     ElevatedButton(
                       onPressed: _editItem,
                       style: ElevatedButton.styleFrom(
@@ -834,7 +951,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                       ),
-                      child: Text("編集(edit)", style: TextStyle(fontSize: 16, color: Colors.white)),
+                      child: Text("編集(Edit)", style: TextStyle(fontSize: 16, color: Colors.white)),
                     )
                   else if (status == "購入済み(Purchased)")
                     ElevatedButton(
@@ -844,7 +961,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                       ),
-                      child: Text("購入取り消し(Purchase cancellation)", style: TextStyle(fontSize: 16, color: Colors.white)),
+                      child: Text("購入取り消し(Purchase Cancellation)", style: TextStyle(fontSize: 16, color: Colors.white)),
                     )
                   else if (!isAdmin && status == "出品中(listed)")
                     ElevatedButton(
@@ -854,7 +971,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                       ),
-                      child: Text("購入する(buy)", style: TextStyle(fontSize: 16, color: Colors.white)),
+                      child: Text("購入する(Buy)", style: TextStyle(fontSize: 16, color: Colors.white)),
                     ),
                   SizedBox(height: 20),
                 ],
@@ -866,6 +983,97 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
                 style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.grey[700]),
               ),
             ),
+    );
+  }
+
+  // 運営用の来店予定日選択ダイアログ
+  void _showAdminDateSelectionDialog() {
+    List<String> visitDate = [];
+    final TextEditingController visitDateController = TextEditingController();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text("来店予定日を選択(Select Visit Dates)"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: visitDateController,
+                    decoration: InputDecoration(
+                      hintText: '選択された日付(Selected dates)',
+                    ),
+                    readOnly: true,
+                  ),
+                  SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () async {
+                      DateTime now = DateTime.now();
+                      DateTime initialDate = now.add(Duration(days: (DateTime.wednesday - now.weekday + 7) % 7));
+
+                      final DateTime? pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: initialDate,
+                        firstDate: now,
+                        lastDate: now.add(Duration(days: 365)),
+                        selectableDayPredicate: (date) {
+                          return date.weekday == DateTime.wednesday;
+                        },
+                      );
+
+                      if (pickedDate != null) {
+                        setState(() {
+                          final formattedDate = pickedDate.toLocal().toString().split(' ')[0];
+                          if (!visitDate.contains(formattedDate)) {
+                            visitDate.add(formattedDate);
+                            visitDateController.text = visitDate.join(', ');
+                          }
+                        });
+                      }
+                    },
+                    child: Text("カレンダーで日付を選択(Select Dates from Calendar)"),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("閉じる(Close)"),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    try {
+                      await FirebaseFirestore.instance.collection('shopVisits').add({
+                        'userId': currentUserId,
+                        'userName': FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー(Anonymous)',
+                        'visitDate': visitDate, // visitDate を保存
+                        'product': profileData?['name'] ?? '商品名なし(Product name not available)',
+                        'productId': widget.documentId,
+                        'visitType': 'Mediation',
+                        'createdAt': Timestamp.now(),
+                      });
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("日付が選択されました(Dates Selected)")),
+                      );
+
+                      Navigator.pop(context);
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("エラーが発生しました: $e")),
+                      );
+                    }
+                  },
+                  child: const Text("確定(Confirm)"),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 

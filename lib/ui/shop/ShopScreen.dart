@@ -119,7 +119,6 @@ class _ShopScreenState extends State<ShopScreen> {
                 stream: isAdmin
                     ? FirebaseFirestore.instance
                         .collection('shopVisits')
-                        .orderBy('visitDate') // 来店予定日が早い順に並べる
                         .snapshots()
                     : FirebaseFirestore.instance
                         .collection('shopVisits')
@@ -136,6 +135,7 @@ class _ShopScreenState extends State<ShopScreen> {
                   var visits = snapshot.data!.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
                   var listings = visits.where((visit) => visit['visitType'] == 'listing').toList();
                   var purchases = visits.where((visit) => visit['visitType'] == 'purchase').toList();
+                  var mediations = visits.where((visit) => visit['visitType'] == 'Mediation').toList();
                   var cancellations = visits.where((visit) => visit['visitType'] == 'cancel').toList();
 
                   return ListView(
@@ -156,6 +156,15 @@ class _ShopScreenState extends State<ShopScreen> {
                           child: Text("購入リスト(Purchases)", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                         ),
                         ...purchases.map((visit) => _buildVisitCard(visit, isAdmin)),
+                      ],
+
+                      // 仲介リスト
+                      if (mediations.isNotEmpty) ...[
+                        const Padding(
+                          padding: EdgeInsets.all(8.0),
+                          child: Text("仲介リスト(Mediations)", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                        ),
+                        ...mediations.map((visit) => _buildVisitCard(visit, isAdmin)),
                       ],
 
                       // キャンセル待ちリスト
@@ -184,11 +193,16 @@ class _ShopScreenState extends State<ShopScreen> {
     IconData iconData;
     Color color;
     String tag;
+
     if (visit['visitType'] == 'cancel') {
       iconData = Icons.cancel; // キャンセル待ち用のアイコン
       color = Colors.red;
       tag = "キャンセル待ち(Cancel)";
-    } else if (visit['pickupMethod'] == '仲介(Mediation)') {
+    } else if (visit['visitType'] == 'Mediation') {
+      iconData = Icons.handshake; // 仲介用のアイコン
+      color = Colors.blue;
+      tag = "仲介(Mediation)";
+       } else if (visit['pickupMethod'] == '仲介(Mediation)') {
       iconData = Icons.handshake; // 仲介用のアイコン
       color = Colors.blue;
       tag = "仲介(Mediation)";

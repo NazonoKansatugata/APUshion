@@ -5,7 +5,7 @@ class ShopVisit {
   String userId;
   String userName;
   String product;
-  String visitDate;
+  List<String> visitDate; // visitDate をリスト形式に変更
   String store;
   String visitType;
   String pickupMethod; // 受け取り方法を追加
@@ -31,10 +31,10 @@ class ShopVisit {
       userId: data['userId'] ?? '',
       userName: data['userName'] ?? '匿名ユーザー(Anonymous User)',
       product: data['product'] ?? '商品名なし(No Product Name)',
-      visitDate: data['visitDate'] ?? '未設定(Unset)',
+      visitDate: List<String>.from(data['visitDate'] ?? []), // リスト形式に変更
       store: data['store'] ?? '未設定(Unset)',
-      visitType: data['visitType'] ?? '不明(Unknown)', // キャンセル待ちも含む
-      pickupMethod: data['pickupMethod'] ?? '未設定(Unset)', // 受け取り方法を追加
+      visitType: data['visitType'] ?? '不明(Unknown)',
+      pickupMethod: data['pickupMethod'] ?? '未設定(Unset)',
       createdAt: data['createdAt'] ?? Timestamp.now(),
     );
   }

@@ -34,38 +34,47 @@ class ProfileDetailViewModel extends ChangeNotifier {
   }
 
   void _showPurchaseDialog(BuildContext context, String documentId, Map<String, dynamic>? profileData) {
+    List<String> visitDate = []; // visitDate をリストとして管理
     final TextEditingController visitDateController = TextEditingController();
 
     showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('来店予定日を入力(Enter visit date)'),
+          title: const Text('来店予定日を入力(Enter visit dates)'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: visitDateController,
-                decoration: const InputDecoration(hintText: '例: 2024-01-01'),
+                decoration: const InputDecoration(hintText: '例: 2024-01-01, 2024-01-08'),
+                readOnly: true,
               ),
               SizedBox(height: 10),
-              DropdownButtonFormField<String>(
-                value: '店舗受け取り(Store Pickup)',
-                items: [
-                  DropdownMenuItem(
-                    value: '店舗受け取り(Store Pickup)',
-                    child: Text('店舗受け取り(Store Pickup)'),
-                  ),
-                  DropdownMenuItem(
-                    value: '配送(Delivery)',
-                    child: Text('配送(Delivery)'),
-                  ),
-                ],
-                onChanged: (value) {
-                  // 選択された受け取り方法を保存
-                  selectedPickupMethod = value!;
+              ElevatedButton(
+                onPressed: () async {
+                  DateTime now = DateTime.now();
+                  DateTime initialDate = now.add(Duration(days: (DateTime.wednesday - now.weekday + 7) % 7));
+
+                  final DateTime? pickedDate = await showDatePicker(
+                    context: context,
+                    initialDate: initialDate,
+                    firstDate: now,
+                    lastDate: now.add(Duration(days: 365)),
+                    selectableDayPredicate: (date) {
+                      return date.weekday == DateTime.wednesday;
+                    },
+                  );
+
+                  if (pickedDate != null) {
+                    final formattedDate = pickedDate.toLocal().toString().split(' ')[0];
+                    if (!visitDate.contains(formattedDate)) {
+                      visitDate.add(formattedDate);
+                      visitDateController.text = visitDate.join(', ');
+                    }
+                  }
                 },
-                decoration: const InputDecoration(labelText: '受け取り方法(Pickup Method)'),
+                child: const Text('カレンダーで日付を選択(Select dates from calendar)'),
               ),
             ],
           ),
@@ -84,14 +93,13 @@ class ProfileDetailViewModel extends ChangeNotifier {
 
                   await FirebaseFirestore.instance.collection('shopVisits').add({
                     'userId': currentUserId,
-                    'userName':
-                        FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー(Anonymous)',
+                    'userName': FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー(Anonymous)',
                     'productId': documentId,
                     'product': profileData?['name'] ?? '商品名なし(No product name)',
                     'store': profileData?['store'] ?? '店舗情報なし(No store info)',
-                    'visitDate': visitDateController.text,
+                    'visitDate': visitDate, // visitDate を保存
                     'visitType': 'purchase',
-                    'pickupMethod': selectedPickupMethod, // 受け取り方法を追加
+                    'pickupMethod': selectedPickupMethod,
                     'createdAt': Timestamp.now(),
                   });
 
