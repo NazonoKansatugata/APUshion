@@ -68,6 +68,77 @@ class _ShopScreenState extends State<ShopScreen> {
     );
   }
 
+  void _showAdminDateSelectionDialog(BuildContext context, Map<String, dynamic> visit, String documentId) {
+    // visitDates を List<String> に変換
+    List<String> visitDates = (visit['visitDates'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+    String? selectedDate; // 選択された日付を格納
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text("来店予定日を選択(Select Visit Date)"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (visitDates.isNotEmpty)
+                    DropdownButtonFormField<String>(
+                      value: selectedDate,
+                      items: visitDates.map((date) {
+                        return DropdownMenuItem(
+                          value: date,
+                          child: Text(date),
+                        );
+                      }).toList(),
+                      onChanged: (value) {
+                        setState(() {
+                          selectedDate = value;
+                        });
+                      },
+                      decoration: InputDecoration(labelText: "来店予定日(Visit Date)"),
+                    )
+                  else
+                    Text("選択可能な日付がありません(No available dates)"),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("キャンセル(Cancel)"),
+                ),
+                ElevatedButton(
+                  onPressed: selectedDate != null
+                      ? () async {
+                          try {
+                            // Firestore に選択された日付を保存
+                            await FirebaseFirestore.instance.collection('shopVisits').doc(documentId).update({
+                              'visitDate': selectedDate, // 選択された日付を格納
+                            });
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text("日付が選択されました(Date Selected)")),
+                            );
+
+                            Navigator.pop(context);
+                          } catch (e) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text("エラーが発生しました: $e")),
+                            );
+                          }
+                        }
+                      : null,
+                  child: const Text("確定(Confirm)"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final authVM = context.watch<AuthViewModel>();
@@ -132,11 +203,16 @@ class _ShopScreenState extends State<ShopScreen> {
                     return const Center(child: Text("来店予定はありません(No visit schedule)"));
                   }
 
-                  var visits = snapshot.data!.docs.map((doc) => doc.data() as Map<String, dynamic>).toList();
+                  var visits = snapshot.data!.docs.map((doc) {
+                    var data = doc.data() as Map<String, dynamic>;
+                    data['id'] = doc.id; // ドキュメントIDを追加
+                    return data;
+                  }).toList();
+
                   var listings = visits.where((visit) => visit['visitType'] == 'listing').toList();
                   var purchases = visits.where((visit) => visit['visitType'] == 'purchase').toList();
                   var mediations = visits.where((visit) => visit['visitType'] == 'Mediation').toList();
-                  var cancellations = visits.where((visit) => visit['visitType'] == 'cancel').toList();
+                  var cancellations = visits.where((visit) => visit['visitType'] == 'cancel').toList(); // キャンセル待ちリストを取得
 
                   return ListView(
                     children: [
@@ -188,6 +264,7 @@ class _ShopScreenState extends State<ShopScreen> {
 
   Widget _buildVisitCard(Map<String, dynamic> visit, bool isAdmin) {
     String? productId = visit['productId'];
+    String documentId = visit['id']; // ドキュメントIDを取得
 
     // アイコンと色、タグを決定
     IconData iconData;
@@ -199,10 +276,6 @@ class _ShopScreenState extends State<ShopScreen> {
       color = Colors.red;
       tag = "キャンセル待ち(Cancel)";
     } else if (visit['visitType'] == 'Mediation') {
-      iconData = Icons.handshake; // 仲介用のアイコン
-      color = Colors.blue;
-      tag = "仲介(Mediation)";
-       } else if (visit['pickupMethod'] == '仲介(Mediation)') {
       iconData = Icons.handshake; // 仲介用のアイコン
       color = Colors.blue;
       tag = "仲介(Mediation)";
@@ -235,11 +308,16 @@ class _ShopScreenState extends State<ShopScreen> {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("来店予定日(Scheduled visit date): ${visit['visitDate']}"),
+            Text("来店予定日(Scheduled visit date): ${visit['visitDate'] ?? '未設定(Unset)'}"),
             if (isAdmin) Text("ユーザー(UserName): ${visit['userName']}"),
           ],
         ),
-        trailing: const Icon(Icons.arrow_forward),
+        trailing: isAdmin && visit['visitType'] == 'Mediation'
+            ? ElevatedButton(
+                onPressed: () => _showAdminDateSelectionDialog(context, visit, documentId),
+                child: const Text("日付選択(Select Date)"),
+              )
+            : const Icon(Icons.arrow_forward),
         onTap: productId != null
             ? () => _navigateToDetail(productId)
             : () {

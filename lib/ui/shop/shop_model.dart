@@ -31,7 +31,7 @@ class ShopVisit {
       userId: data['userId'] ?? '',
       userName: data['userName'] ?? '匿名ユーザー(Anonymous User)',
       product: data['product'] ?? '商品名なし(No Product Name)',
-      visitDate: List<String>.from(data['visitDate'] ?? []), // リスト形式に変更
+      visitDate: (data['visitDate'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [], // 型変換を追加
       store: data['store'] ?? '未設定(Unset)',
       visitType: data['visitType'] ?? '不明(Unknown)',
       pickupMethod: data['pickupMethod'] ?? '未設定(Unset)',
