@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_functions/firebase_functions.dart'; // Firebase Functionsをインポート
+import 'package:url_launcher/url_launcher.dart'; // url_launcherをインポート
 
 class ProfileDetailViewModel extends ChangeNotifier {
   String? currentUserId;
@@ -101,6 +103,29 @@ class ProfileDetailViewModel extends ChangeNotifier {
                     'visitType': 'Mediation',
                     'createdAt': Timestamp.now(), // 型を明示
                   });
+
+                  // 出品者のメールアドレスを取得
+                  final sellerId = profileData?['userId'];
+                  if (sellerId != null) {
+                    DocumentSnapshot sellerSnapshot = await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(sellerId)
+                        .get();
+
+                    final sellerEmail = sellerSnapshot['email'];
+                    if (sellerEmail != null) {
+                      // Firebase Functionsを使用してメールを送信
+                      final HttpsCallable sendEmail = FirebaseFunctions.instance.httpsCallable('sendEmail');
+                      await sendEmail.call({
+                        'to': sellerEmail,
+                        'subject': '【商品が売れました】',
+                        'message': 'あなたの商品が売れました。詳細を確認してください。',
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('出品者にメールを送信しました(Email sent to the seller)')),
+                      );
+                    }
+                  }
 
                   isPurchased = true;
                   notifyListeners();
