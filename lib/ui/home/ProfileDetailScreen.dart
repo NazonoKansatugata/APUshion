@@ -74,9 +74,7 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
 
     final transactionType = profileData?['transactionType'] ?? '買取(Purchase)';
     if (transactionType == '仲介(Mediation)') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("この操作は現在利用できません(This action is currently unavailable)")),
-      );
+      _showMediationPurchaseDialog(); // 仲介用購入ダイアログを表示
     } else {
       _showPurchaseDialog();
     }
@@ -269,6 +267,184 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
           },
         );
       },
+    );
+  }
+
+  // 仲介用購入ダイアログ
+  void _showMediationPurchaseDialog() {
+    final List<DateTime?> selectedDates = [];
+    final TextEditingController visitDatesController = TextEditingController();
+    bool isAgreementChecked = false;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('購入手続き(Purchase Process)'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: visitDatesController,
+                    decoration: InputDecoration(
+                      hintText: '選択された日付(Selected dates)',
+                    ),
+                    readOnly: true,
+                  ),
+                  SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () async {
+                      // 初期日付を次の水曜日に設定
+                      DateTime now = DateTime.now();
+                      DateTime initialDate = now.add(Duration(days: (DateTime.wednesday - now.weekday + 7) % 7));
+
+                      final DateTime? pickedDate = await showDatePicker(
+                        context: context,
+                        initialDate: initialDate, // 初期日付を設定
+                        firstDate: now,
+                        lastDate: now.add(Duration(days: 365)),
+                        selectableDayPredicate: (date) {
+                          return date.weekday == DateTime.wednesday; // 水曜日のみ選択可能
+                        },
+                      );
+
+                      if (pickedDate != null) {
+                        setState(() {
+                          if (!selectedDates.contains(pickedDate)) {
+                            selectedDates.add(pickedDate); // 重複を防ぐ
+                            visitDatesController.text = selectedDates
+                                .map((date) => "${date?.toLocal()}".split(' ')[0])
+                                .join(', ');
+                          }
+                        });
+                      }
+                    },
+                    child: Text('カレンダーで日付を選択(Select dates from calendar)'),
+                  ),
+                  SizedBox(height: 10),
+                  if (selectedDates.isNotEmpty)
+                    _buildSelectedDatesTable(selectedDates), // 選択した日付を表形式で表示
+                  SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) => _agreementDialog(),
+                      );
+                    },
+                    child: Text('契約書を表示(Show Agreement)'),
+                  ),
+                  SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: isAgreementChecked,
+                        onChanged: (bool? newValue) {
+                          setState(() {
+                            isAgreementChecked = newValue ?? false;
+                          });
+                        },
+                      ),
+                      Expanded(
+                        child: Text(
+                          '契約書に同意する(I agree to the agreement)',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('キャンセル(Cancel)'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (selectedDates.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('少なくとも1つの日付を選択してください(Please select at least one date)')),
+                      );
+                      return;
+                    }
+
+                    if (!isAgreementChecked) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('契約書に同意してください(Please agree to the agreement)')),
+                      );
+                      return;
+                    }
+
+                    try {
+                      // shopVisits にデータを追加
+                      await FirebaseFirestore.instance.collection('shopVisits').add({
+                        'userId': currentUserId,
+                        'userName': FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー(Anonymous)',
+                        'visitDates': selectedDates.map((date) => date?.toLocal().toString().split(' ')[0]).toList(),
+                        'product': profileData?['name'] ?? '商品名なし(Product name not available)',
+                        'productId': widget.documentId,
+                        'visitType': 'Mediation', // 仲介として設定
+                        'createdAt': Timestamp.now(),
+                      });
+
+                      // profiles のステータスを更新
+                      await FirebaseFirestore.instance.collection('profiles').doc(widget.documentId).update({
+                        'status': '仲介(Mediation)', // ステータスを仲介に設定
+                      });
+
+                      setState(() {
+                        isPurchased = true;
+                      });
+
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (context) => MainScreen()), // ホーム画面に遷移
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("購入が完了し、来店予定を追加しました(Purchase completed and visit scheduled)")),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("購入に失敗しました: $e")),
+                      );
+                    }
+                  },
+                  child: const Text('購入を確定(Purchase)'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // 選択した日付を表形式で表示
+  Widget _buildSelectedDatesTable(List<DateTime?> selectedDates) {
+    return Table(
+      border: TableBorder.all(color: Colors.grey),
+      children: [
+        TableRow(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Text('日付(Date)', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        ...selectedDates.map(
+          (date) => TableRow(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text("${date?.toLocal()}".split(' ')[0]),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
