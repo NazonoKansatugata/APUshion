@@ -15,20 +15,12 @@ class CreateScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
-    final isAdmin = user?.uid == '0jbF0jcGAaeWyOiZ75LzFbmfQK22';
+    final isAdmin = user?.uid == 'qt8Y9nviUobYh2ktkNA9iAKPyae2';
 
     return ChangeNotifierProvider(
       create: (_) {
         final viewModel = CreateScreenViewModel();
-        if (initialProfileData != null) {
-          viewModel.nameController.text = initialProfileData!['name'] ?? '';
-          viewModel.descriptionController.text = initialProfileData!['description'] ?? '';
-          viewModel.priceController.text = initialProfileData!['price']?.toString() ?? '';
-          viewModel.selectedCategory = initialProfileData!['category'] ?? '';
-          viewModel.imageUrls = List<String>.from(initialProfileData!['imageUrls'] ?? []);
-          viewModel.storeController.text = initialProfileData!['store'] ?? '本店';
-          viewModel.visitDateController.text = initialProfileData!['visitDate'] ?? '';
-        }
+        viewModel.initializeData(initialProfileData); // 初期データを設定
         return viewModel;
       },
       child: Scaffold(
@@ -59,7 +51,7 @@ class CreateScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
                 DropdownButtonFormField<String>(
-                  value: viewModel.selectedCategory,
+                  value: viewModel.selectedCategory, // カテゴリの初期値を反映
                   items: ['電子レンジ(microwave oven)', '冷蔵庫(refrigerator)', '洗濯機(washing machine)', 'その他(others)'].map((category) {
                     return DropdownMenuItem(value: category, child: Text(category));
                   }).toList(),
@@ -113,63 +105,6 @@ class CreateScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 20),
 
-                // 配送と店舗受け取りの選択
-                DropdownButtonFormField<String>(
-                  value: viewModel.selectedPickupMethod,
-                  items: [
-                    DropdownMenuItem(
-                      value: '店舗受け取り(Store Pickup)',
-                      child: Text('店舗受け取り(Store Pickup)'),
-                    ),
-                    DropdownMenuItem(
-                      value: '配送(Delivery)',
-                      child: Text('配送(Delivery)'),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    viewModel.selectedPickupMethod = value!;
-                  },
-                  decoration: const InputDecoration(labelText: '受け取り方法(Pickup Method)'),
-                ),
-                if (viewModel.selectedPickupMethod == '配送(Delivery)')
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Text(
-                      '配送には500~1000円の送料がかかります(Delivery incurs a shipping fee of ¥500~¥1000)',
-                      style: TextStyle(color: Colors.red, fontSize: 14),
-                    ),
-                  ),
-                const SizedBox(height: 20),
-
-                // 来店予定日または希望到着日の入力
-                TextFormField(
-                  controller: viewModel.visitDateController,
-                  decoration: InputDecoration(
-                    labelText: viewModel.selectedPickupMethod == '配送(Delivery)'
-                        ? '希望到着日(Desired Delivery Date)'
-                        : '来店予定日(Visit Date)',
-                    suffixIcon: GestureDetector(
-                      onTap: () async {
-                        DateTime? selectedDate = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.now().add(Duration(days: (DateTime.wednesday - DateTime.now().weekday + 7) % 7)), // 次の水曜日
-                          firstDate: DateTime.now(),
-                          lastDate: DateTime(2101),
-                          selectableDayPredicate: (date) {
-                            return date.weekday == DateTime.wednesday; // 水曜日のみ選択可能
-                          },
-                        );
-                        if (selectedDate != null) {
-                          viewModel.visitDateController.text = "${selectedDate.toLocal()}".split(' ')[0];
-                        }
-                      },
-                      child: Icon(Icons.calendar_today),
-                    ),
-                  ),
-                  readOnly: true,
-                ),
-                const SizedBox(height: 20),
-
                 DropdownButtonFormField<String>(
                   value: viewModel.storeController.text.isNotEmpty
                       ? viewModel.storeController.text
@@ -183,6 +118,83 @@ class CreateScreen extends StatelessWidget {
                   decoration: InputDecoration(labelText: isAdmin ? "取り扱い店舗(Store)" : "来店店舗(Visit Store)"),
                 ),
                 const SizedBox(height: 20),
+
+                DropdownButtonFormField<String>(
+                  value: viewModel.selectedTransactionType,
+                  items: [
+                    DropdownMenuItem(
+                      value: '買取(Purchase)',
+                      child: Text('買取(Purchase)'),
+                    ),
+                    DropdownMenuItem(
+                      value: '仲介(Mediation)',
+                      child: Text('仲介(Mediation)'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    viewModel.selectedTransactionType = value!;
+                    viewModel.notifyListeners(); // 状態を更新
+                  },
+                  decoration: const InputDecoration(labelText: '取引タイプ(Transaction Type)'),
+                ),
+                const SizedBox(height: 20),
+
+                if (viewModel.selectedTransactionType == '買取(Purchase)') ...[
+                  DropdownButtonFormField<String>(
+                    value: viewModel.selectedPickupMethod.isNotEmpty ? viewModel.selectedPickupMethod : null,
+                    items: [
+                      DropdownMenuItem(
+                        value: '店舗受け取り(Store Pickup)',
+                        child: Text('店舗受け取り(Store Pickup)'),
+                      ),
+                      DropdownMenuItem(
+                        value: '配送(Delivery)',
+                        child: Text('配送(Delivery)'),
+                      ),
+                    ],
+                    onChanged: (value) {
+                      viewModel.selectedPickupMethod = value!;
+                      viewModel.notifyListeners(); // 状態を更新
+                    },
+                    decoration: const InputDecoration(labelText: '受け取り方法(Pickup Method)'),
+                  ),
+                  if (viewModel.selectedPickupMethod == '配送(Delivery)')
+                    Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Text(
+                        '配送には500~1000円の送料がかかります(Delivery incurs a shipping fee of ¥500~¥1000)',
+                        style: TextStyle(color: Colors.red, fontSize: 14),
+                      ),
+                    ),
+                  const SizedBox(height: 20),
+                  TextFormField(
+                    controller: viewModel.visitDateController,
+                    decoration: InputDecoration(
+                      labelText: viewModel.selectedPickupMethod == '配送(Delivery)'
+                          ? '希望到着日(Desired Delivery Date)'
+                          : '来店予定日(Visit Date)',
+                      suffixIcon: GestureDetector(
+                        onTap: () async {
+                          DateTime? selectedDate = await showDatePicker(
+                            context: context,
+                            initialDate: DateTime.now().add(Duration(days: (DateTime.wednesday - DateTime.now().weekday + 7) % 7)),
+                            firstDate: DateTime.now(),
+                            lastDate: DateTime(2101),
+                            selectableDayPredicate: (date) {
+                              return date.weekday == DateTime.wednesday;
+                            },
+                          );
+                          if (selectedDate != null) {
+                            viewModel.visitDateController.text = "${selectedDate.toLocal()}".split(' ')[0];
+                          }
+                        },
+                        child: Icon(Icons.calendar_today),
+                      ),
+                    ),
+                    readOnly: true,
+                  ),
+                  const SizedBox(height: 20),
+                ],
 
                 Row(
                   children: [
@@ -207,29 +219,10 @@ class CreateScreen extends StatelessWidget {
                 Center(
                   child: ElevatedButton(
                     onPressed: viewModel.isAgreementChecked &&
-                               viewModel.visitDateController.text.isNotEmpty &&
-                               viewModel.nameController.text.isNotEmpty
+                               viewModel.nameController.text.isNotEmpty &&
+                               (viewModel.selectedTransactionType == '仲介(Mediation)' || 
+                                viewModel.visitDateController.text.isNotEmpty) // 仲介の場合は来店予定日を必須から除外
                         ? () async {
-                            if (viewModel.selectedPickupMethod == '配送(Delivery)') {
-                              final user = FirebaseAuth.instance.currentUser;
-                              if (user == null ||
-                                  user.email == null ||
-                                  user.email!.isEmpty ||
-                                  user.displayName == null ||
-                                  user.displayName!.isEmpty ||
-                                  user.phoneNumber == null ||
-                                  user.phoneNumber!.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      '配送を選択した場合、メールアドレス、本名、電話番号が必要です(Email, Full Name, and Phone Number are required for delivery)',
-                                    ),
-                                  ),
-                                );
-                                return;
-                              }
-                            }
-
                             if (profileId == null) {
                               await viewModel.submitProfile(context, isAdmin);
                             } else {

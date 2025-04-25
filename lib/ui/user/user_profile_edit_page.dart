@@ -89,6 +89,19 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
       });
     }
 
+    Future<void> _sendVerificationEmail() async {
+      try {
+        await authViewModel.sendEmailVerification();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('認証メールを送信しました。メールを確認してください。')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('認証メールの送信に失敗しました: $e')),
+        );
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('プロフィール編集'),
@@ -126,7 +139,6 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
                           return null;
                         },
                       ),
-
                       const SizedBox(height: 20),
                       TextFormField(
                         controller: _fullNameController,
@@ -134,6 +146,12 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
                           labelText: '本名（Full Name）',
                           border: OutlineInputBorder(),
                         ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return '本名を入力してください(Please enter your full name)';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
@@ -142,6 +160,12 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
                           labelText: '住所（Address）',
                           border: OutlineInputBorder(),
                         ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return '住所を入力してください(Please enter your address)';
+                          }
+                          return null;
+                        },
                       ),
                       const SizedBox(height: 20),
                       TextFormField(
@@ -150,8 +174,13 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
                           labelText: '電話番号（Phone Number）',
                           border: OutlineInputBorder(),
                         ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return '電話番号を入力してください(Please enter your phone number)';
+                          }
+                          return null;
+                        },
                       ),
-
                       const SizedBox(height: 20),
                       TextField(
                         controller: _photoURLController,
@@ -164,6 +193,20 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
                         onPressed: () => _pickImage(_photoURLController),
                         child: Text('ファイルを選択'),
                       ),
+                      if (user.isEmailVerified == false)
+                        Column(
+                          children: [
+                            const Text(
+                              'メールアドレスが未認証です。',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                            const SizedBox(height: 8),
+                            ElevatedButton(
+                              onPressed: _sendVerificationEmail,
+                              child: const Text('認証メールを送信'),
+                            ),
+                          ],
+                        ),
                       const SizedBox(height: 24),
                       ElevatedButton(
                         style: ElevatedButton.styleFrom(
@@ -187,6 +230,8 @@ class _UserProfileEditPageState extends State<UserProfileEditPage> {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('プロフィールを更新しました')),
                               );
+                              // 更新後にmain.dartに遷移
+                              Navigator.pushReplacementNamed(context, '/');
                             } catch (e) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text('更新に失敗しました: $e')),

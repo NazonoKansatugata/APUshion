@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:apusion/ui/auth/view_model/auth_view_model.dart';
 import 'package:apusion/ui/auth/view/email_login_page.dart';
+import 'package:apusion/ui/user/user_profile_edit_page.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../components/background_animation.dart';
 
@@ -30,25 +31,22 @@ class _EmailSignUpState extends State<EmailSignUpPage> {
       );
       // 登録成功時、currentUser がセットされているはず
       if (authVM.currentUser != null) {
-        // 画面遷移やメッセージ表示などのUIロジック
         debugPrint("ユーザ登録: ${authVM.currentUser!.toJson()}");
         emailController.clear();
         passwordController.clear();
 
-        // 例: 登録後はログイン画面へ飛ばす
+        // UserProfileEditPageに遷移
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const EmailLoginPage()),
+          MaterialPageRoute(builder: (context) => const UserProfileEditPage()),
         );
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
-        // FirebaseAuthException の場合はユーザに分かりやすいメッセージを
         errorMessage = e.message ?? '登録に失敗しました。';
       });
       debugPrint('FirebaseAuthException: $e');
     } catch (e) {
-      // 予期せぬ例外
       setState(() {
         errorMessage = 'エラーが発生しました: $e';
       });

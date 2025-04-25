@@ -72,337 +72,326 @@ class _ProfileDetailScreenState extends State<ProfileDetailScreen> {
       return;
     }
 
+    final transactionType = profileData?['transactionType'] ?? '買取(Purchase)';
+    if (transactionType == '仲介(Mediation)') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("この操作は現在利用できません(This action is currently unavailable)")),
+      );
+    } else {
+      _showPurchaseDialog();
+    }
+  }
+
+  // 買取用購入ダイアログ
+  void _showPurchaseDialog() {
+    final TextEditingController visitDateController = TextEditingController();
+    DateTime? pickedDate;
+    bool isAgreementChecked = false; // チェックボックスの状態を管理
+    String selectedPickupMethod = '店舗受け取り(Store Pickup)'; // 受け取り方法の初期値
+
     showDialog(
       context: context,
-      builder: (context) => _purchaseDialog(),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text('購入手続き(Purchase Process)'),
+              content: Form(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: selectedPickupMethod,
+                      items: [
+                        DropdownMenuItem(
+                          value: '店舗受け取り(Store Pickup)',
+                          child: Text('店舗受け取り(Store Pickup)'),
+                        ),
+                        DropdownMenuItem(
+                          value: '配送(Delivery)',
+                          child: Text('配送(Delivery)'),
+                        ),
+                      ],
+                      onChanged: (value) {
+                        setState(() {
+                          selectedPickupMethod = value!;
+                        });
+                      },
+                      decoration: const InputDecoration(labelText: '受け取り方法(Pickup Method)'),
+                    ),
+                    if (selectedPickupMethod == '配送(Delivery)')
+                      Padding(
+                        padding: const EdgeInsets.only(top: 10),
+                        child: Text(
+                          '配送には500~1000円の送料がかかります(Delivery incurs a shipping fee of ¥500~¥1000)',
+                          style: TextStyle(color: Colors.red, fontSize: 14),
+                        ),
+                      ),
+                    SizedBox(height: 10),
+                    TextFormField(
+                      controller: visitDateController,
+                      decoration: InputDecoration(
+                        hintText: selectedPickupMethod == '配送(Delivery)'
+                            ? '例: 2024-01-01 (希望到着日)'
+                            : '例: 2024-01-01 (来店予定日)',
+                      ),
+                      readOnly: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return selectedPickupMethod == '配送(Delivery)'
+                              ? '希望到着日を選択してください(Please select a desired delivery date)'
+                              : '来店予定日を選択してください(Please select a visit date)';
+                        }
+                        return null;
+                      },
+                    ),
+                    SizedBox(height: 10),
+                    ElevatedButton(
+                      onPressed: () async {
+                        pickedDate = await showDatePicker(
+                          context: context,
+                          initialDate: DateTime.now().add(Duration(days: (DateTime.wednesday - DateTime.now().weekday + 7) % 7)), // 次の水曜日
+                          firstDate: DateTime.now(),
+                          lastDate: DateTime.now().add(Duration(days: 365)),
+                          selectableDayPredicate: (date) {
+                            return date.weekday == DateTime.wednesday; // 水曜日のみ選択可能
+                          },
+                        );
+
+                        if (pickedDate != null) {
+                          visitDateController.text = "${pickedDate?.toLocal()}".split(' ')[0];
+                        }
+                      },
+                      child: Text('カレンダーで選択(Select from Calendar)'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        showDialog(
+                          context: context,
+                          builder: (context) => _agreementDialog(),
+                        );
+                      },
+                      child: Text('契約書を表示(Show Agreement)'),
+                    ),
+                    SizedBox(height: 10),
+                    Row(
+                      children: [
+                        Checkbox(
+                          value: isAgreementChecked,
+                          onChanged: (bool? newValue) {
+                            setState(() {
+                              isAgreementChecked = newValue ?? false;
+                            });
+                          },
+                        ),
+                        Expanded(
+                          child: Text(
+                            '契約書に同意する(I agree to the agreement)',
+                            style: TextStyle(fontSize: 16),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('キャンセル(Cancel)'),
+                ),
+                ElevatedButton(
+                  onPressed: () async {
+                    if (visitDateController.text.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(selectedPickupMethod == '配送(Delivery)'
+                              ? '希望到着日を選択してください(Please select a desired delivery date)'
+                              : '来店予定日を選択してください(Please select a visit date)'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    if (!isAgreementChecked) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('契約書に同意してください(Please agree to the agreement)')),
+                      );
+                      return;
+                    }
+
+                    if (profileData?['name'] == null || profileData!['name'].isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('商品名がありません(Product name is required)')),
+                      );
+                      return;
+                    }
+
+                    // 配送の場合、ユーザー情報の必須項目をチェック
+                    if (selectedPickupMethod == '配送(Delivery)') {
+                      // 配送時のユーザー情報チェックを削除
+                    }
+
+                    try {
+                      await FirebaseFirestore.instance.collection('shopVisits').add({
+                        'userId': currentUserId,
+                        'userName': FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー(Anonymous)',
+                        'visitDate': visitDateController.text,
+                        'product': profileData?['name'] ?? '商品名なし(Product name not available)',
+                        'productId': widget.documentId,
+                        'visitType': 'purchase',
+                        'pickupMethod': selectedPickupMethod,
+                        'createdAt': Timestamp.now(),
+                      });
+
+                      await FirebaseFirestore.instance.collection('profiles').doc(widget.documentId).update({'status': '購入済み(Purchased)'});
+
+                      setState(() {
+                        isPurchased = true;
+                      });
+
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (context) => MainScreen()), // ホーム画面に遷移
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("購入が完了し、来店予定を追加しました(Purchase completed and visit scheduled)")),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("購入に失敗しました: $e")),
+                      );
+                    }
+                  },
+                  child: const Text('購入を確定(Purchase)'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 
-  // 購入処理ダイアログ
-Widget _purchaseDialog() {
-  final TextEditingController visitDateController = TextEditingController();
-  DateTime? pickedDate;
-  bool isAgreementChecked = false; // チェックボックスの状態を管理
-  String selectedPickupMethod = '店舗受け取り(Store Pickup)'; // 受け取り方法の初期値
+  // 購入取り消し処理
+  Future<void> _cancelPurchase() async {
+    String? selectedReason;
+    bool isAgreementChecked = false;
 
-  return StatefulBuilder(
-    builder: (context, setState) {
-      return AlertDialog(
-        title: Text('購入手続き(Purchase Process)'),
-        content: Form(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<String>(
-                value: selectedPickupMethod,
-                items: [
-                  DropdownMenuItem(
-                    value: '店舗受け取り(Store Pickup)',
-                    child: Text('店舗受け取り(Store Pickup)'),
-                  ),
-                  DropdownMenuItem(
-                    value: '配送(Delivery)',
-                    child: Text('配送(Delivery)'),
-                  ),
-                ],
-                onChanged: (value) {
-                  setState(() {
-                    selectedPickupMethod = value!;
-                  });
-                },
-                decoration: const InputDecoration(labelText: '受け取り方法(Pickup Method)'),
-              ),
-              if (selectedPickupMethod == '配送(Delivery)')
-                Padding(
-                  padding: const EdgeInsets.only(top: 10),
-                  child: Text(
-                    '配送には500~1000円の送料がかかります(Delivery incurs a shipping fee of ¥500~¥1000)',
-                    style: TextStyle(color: Colors.red, fontSize: 14),
-                  ),
-                ),
-              SizedBox(height: 10),
-              TextFormField(
-                controller: visitDateController,
-                decoration: InputDecoration(
-                  hintText: selectedPickupMethod == '配送(Delivery)'
-                      ? '例: 2024-01-01 (希望到着日)'
-                      : '例: 2024-01-01 (来店予定日)',
-                ),
-                readOnly: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return selectedPickupMethod == '配送(Delivery)'
-                        ? '希望到着日を選択してください(Please select a desired delivery date)'
-                        : '来店予定日を選択してください(Please select a visit date)';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 10),
-              ElevatedButton(
-                onPressed: () async {
-                  pickedDate = await showDatePicker(
-                    context: context,
-                    initialDate: DateTime.now().add(Duration(days: (DateTime.wednesday - DateTime.now().weekday + 7) % 7)), // 次の水曜日
-                    firstDate: DateTime.now(),
-                    lastDate: DateTime.now().add(Duration(days: 365)),
-                    selectableDayPredicate: (date) {
-                      return date.weekday == DateTime.wednesday; // 水曜日のみ選択可能
-                    },
-                  );
-
-                  if (pickedDate != null) {
-                    visitDateController.text = "${pickedDate?.toLocal()}".split(' ')[0];
-                  }
-                },
-                child: Text('カレンダーで選択(Select from Calendar)'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) => _agreementDialog(),
-                  );
-                },
-                child: Text('契約書を表示(Show Agreement)'),
-              ),
-              SizedBox(height: 10),
-              Row(
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: Text("購入取り消し理由(Purchase Cancellation Reason)"),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Checkbox(
-                    value: isAgreementChecked,
-                    onChanged: (bool? newValue) {
+                  DropdownButtonFormField<String>(
+                    value: selectedReason,
+                    items: [
+                      DropdownMenuItem(
+                        value: "商品が不要になった(No longer needed)",
+                        child: Text("商品が不要になった(No longer needed)"),
+                      ),
+                      DropdownMenuItem(
+                        value: "配送が遅い(Delivery delay)",
+                        child: Text("配送が遅い(Delivery delay)"),
+                      ),
+                      DropdownMenuItem(
+                        value: "その他(Other)",
+                        child: Text("その他(Other)"),
+                      ),
+                    ],
+                    onChanged: (value) {
                       setState(() {
-                        isAgreementChecked = newValue ?? false;
+                        selectedReason = value;
                       });
                     },
+                    decoration: const InputDecoration(labelText: "理由を選択してください(Select a reason)"),
                   ),
-                  Expanded(
-                    child: Text(
-                      '契約書に同意する(I agree to the agreement)',
-                      style: TextStyle(fontSize: 16),
-                    ),
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: isAgreementChecked,
+                        onChanged: (bool? newValue) {
+                          setState(() {
+                            isAgreementChecked = newValue ?? false;
+                          });
+                        },
+                      ),
+                      Expanded(
+                        child: Text(
+                          "キャンセルに同意します(I agree to the cancellation)",
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('キャンセル(Cancel)'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (visitDateController.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(selectedPickupMethod == '配送(Delivery)'
-                        ? '希望到着日を選択してください(Please select a desired delivery date)'
-                        : '来店予定日を選択してください(Please select a visit date)'),
-                  ),
-                );
-                return;
-              }
-
-              if (!isAgreementChecked) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('契約書に同意してください(Please agree to the agreement)')),
-                );
-                return;
-              }
-
-              if (profileData?['name'] == null || profileData!['name'].isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('商品名がありません(Product name is required)')),
-                );
-                return;
-              }
-
-              // 配送の場合、ユーザー情報の必須項目をチェック
-              if (selectedPickupMethod == '配送(Delivery)') {
-                final authVM = context.read<AuthViewModel>();
-                final user = authVM.currentUser;
-
-                if (user == null ||
-                    user.email == null ||
-                    user.email!.isEmpty ||
-                    user.fullName == null ||
-                    user.fullName!.isEmpty ||
-                    user.address == null ||
-                    user.address!.isEmpty ||
-                    user.phoneNumber == null ||
-                    user.phoneNumber!.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        '配送を選択した場合、メールアドレス、本名、住所、電話番号が必要です(Email, Full Name, Address, and Phone Number are required for delivery)',
-                      ),
-                    ),
-                  );
-                  return;
-                }
-              }
-
-              try {
-                await FirebaseFirestore.instance.collection('shopVisits').add({
-                  'userId': currentUserId,
-                  'userName': FirebaseAuth.instance.currentUser!.displayName ?? '匿名ユーザー(Anonymous)',
-                  'visitDate': visitDateController.text,
-                  'product': profileData?['name'] ?? '商品名なし(Product name not available)',
-                  'productId': widget.documentId,
-                  'visitType': 'purchase',
-                  'pickupMethod': selectedPickupMethod,
-                  'createdAt': Timestamp.now(),
-                });
-
-                await FirebaseFirestore.instance.collection('profiles').doc(widget.documentId).update({'status': '購入済み(Purchased)'});
-
-                setState(() {
-                  isPurchased = true;
-                });
-
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => MainScreen()), // ホーム画面に遷移
-                );
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("購入が完了し、来店予定を追加しました(Purchase completed and visit scheduled)")),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("購入に失敗しました: $e")),
-                );
-              }
-            },
-            child: const Text('購入を確定(Purchase)'),
-          ),
-        ],
-      );
-    },
-  );
-}
-
-// 購入取り消し処理
-Future<void> _cancelPurchase() async {
-  String? selectedReason;
-  bool isAgreementChecked = false;
-
-  await showDialog(
-    context: context,
-    builder: (context) {
-      return StatefulBuilder(
-        builder: (context, setState) {
-          return AlertDialog(
-            title: Text("購入取り消し理由(Purchase Cancellation Reason)"),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                DropdownButtonFormField<String>(
-                  value: selectedReason,
-                  items: [
-                    DropdownMenuItem(
-                      value: "商品が不要になった(No longer needed)",
-                      child: Text("商品が不要になった(No longer needed)"),
-                    ),
-                    DropdownMenuItem(
-                      value: "配送が遅い(Delivery delay)",
-                      child: Text("配送が遅い(Delivery delay)"),
-                    ),
-                    DropdownMenuItem(
-                      value: "その他(Other)",
-                      child: Text("その他(Other)"),
-                    ),
-                  ],
-                  onChanged: (value) {
-                    setState(() {
-                      selectedReason = value;
-                    });
-                  },
-                  decoration: const InputDecoration(labelText: "理由を選択してください(Select a reason)"),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text("キャンセル(Cancel)"),
                 ),
-                Row(
-                  children: [
-                    Checkbox(
-                      value: isAgreementChecked,
-                      onChanged: (bool? newValue) {
-                        setState(() {
-                          isAgreementChecked = newValue ?? false;
-                        });
-                      },
-                    ),
-                    Expanded(
-                      child: Text(
-                        "キャンセルに同意します(I agree to the cancellation)",
-                        style: TextStyle(fontSize: 16),
-                      ),
-                    ),
-                  ],
+                ElevatedButton(
+                  onPressed: () async {
+                    if (selectedReason == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("理由を選択してください(Please select a reason)")),
+                      );
+                      return;
+                    }
+                    if (!isAgreementChecked) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("キャンセルに同意してください(Please agree to the cancellation)")),
+                      );
+                      return;
+                    }
+
+                    try {
+                      // 'profiles' のステータスをキャンセル待ちに更新
+                      await FirebaseFirestore.instance.collection('profiles').doc(widget.documentId).update({
+                        'status': 'キャンセル待ち(cancel)',
+                      });
+
+                      // 'shopVisits' の該当データを更新
+                      QuerySnapshot visitSnapshot = await FirebaseFirestore.instance
+                          .collection('shopVisits')
+                          .where('productId', isEqualTo: widget.documentId)
+                          .where('userId', isEqualTo: currentUserId)
+                          .get();
+
+                      await Future.wait(visitSnapshot.docs.map((doc) => doc.reference.update({
+                            'visitType': 'cancel',
+                          })));
+
+                      setState(() {
+                        profileData?['status'] = 'キャンセル待ち(cancel)'; // ローカルデータも更新
+                      });
+
+                      Navigator.of(context).pushReplacement(
+                        MaterialPageRoute(builder: (context) => MainScreen()), // ホーム画面に遷移
+                      );
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("購入を取り消しました(Purchase canceled)")),
+                      );
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text("取り消しに失敗しました: $e")),
+                      );
+                    }
+                  },
+                  child: const Text("確定(Confirm)"),
                 ),
               ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text("キャンセル(Cancel)"),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  if (selectedReason == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("理由を選択してください(Please select a reason)")),
-                    );
-                    return;
-                  }
-                  if (!isAgreementChecked) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("キャンセルに同意してください(Please agree to the cancellation)")),
-                    );
-                    return;
-                  }
-
-                  try {
-                    // 'profiles' のステータスをキャンセル待ちに更新
-                    await FirebaseFirestore.instance.collection('profiles').doc(widget.documentId).update({
-                      'status': 'キャンセル待ち(cancel)',
-                    });
-
-                    // 'shopVisits' の該当データを更新
-                    QuerySnapshot visitSnapshot = await FirebaseFirestore.instance
-                        .collection('shopVisits')
-                        .where('productId', isEqualTo: widget.documentId)
-                        .where('userId', isEqualTo: currentUserId)
-                        .get();
-
-                    await Future.wait(visitSnapshot.docs.map((doc) => doc.reference.update({
-                          'visitType': 'cancel',
-                        })));
-
-                    setState(() {
-                      profileData?['status'] = 'キャンセル待ち(cancel)'; // ローカルデータも更新
-                    });
-
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (context) => MainScreen()), // ホーム画面に遷移
-                    );
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text("購入を取り消しました(Purchase canceled)")),
-                    );
-                  } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("取り消しに失敗しました: $e")),
-                    );
-                  }
-                },
-                child: const Text("確定(Confirm)"),
-              ),
-            ],
-          );
-        },
-      );
-    },
-  );
-}
+            );
+          },
+        );
+      },
+    );
+  }
 
   // 編集画面へ遷移
   void _editItem() {
@@ -419,112 +408,112 @@ Future<void> _cancelPurchase() async {
     }
   }
 
-// 商品画像表示
-Widget _buildProductImages() {
-  if (profileData?['imageUrls'] != null && profileData!['imageUrls'].isNotEmpty) {
-    return Column(
-      children: [
-        Center(
-          child: Container(
-            width: 500, // 幅をさらに大きく設定
-            height: 400, // 高さをさらに大きく設定
-            child: PageView.builder(
-              controller: _pageController,
-              itemCount: profileData!['imageUrls'].length,
-              onPageChanged: (index) {
-                setState(() {
-                  _currentPage = index; // ページ変更時に現在のページを更新
-                });
-              },
-              itemBuilder: (context, index) {
-                return Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    color: Colors.grey[300],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      profileData!['imageUrls'][index],
-                      fit: BoxFit.cover,
+  // 商品画像表示
+  Widget _buildProductImages() {
+    if (profileData?['imageUrls'] != null && profileData!['imageUrls'].isNotEmpty) {
+      return Column(
+        children: [
+          Center(
+            child: Container(
+              width: 500, // 幅をさらに大きく設定
+              height: 400, // 高さをさらに大きく設定
+              child: PageView.builder(
+                controller: _pageController,
+                itemCount: profileData!['imageUrls'].length,
+                onPageChanged: (index) {
+                  setState(() {
+                    _currentPage = index; // ページ変更時に現在のページを更新
+                  });
+                },
+                itemBuilder: (context, index) {
+                  return Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: Colors.grey[300],
                     ),
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-        SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(
-            profileData!['imageUrls'].length,
-            (index) => Container(
-              margin: EdgeInsets.symmetric(horizontal: 4),
-              width: _currentPage == index ? 12 : 8,
-              height: _currentPage == index ? 12 : 8,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: _currentPage == index ? Colors.blue : Colors.grey,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.network(
+                        profileData!['imageUrls'][index],
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  );
+                },
               ),
             ),
           ),
-        ),
-        SizedBox(height: 10),
-        // サムネイルを追加
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
+          SizedBox(height: 10),
+          Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: List.generate(
               profileData!['imageUrls'].length,
-              (index) => GestureDetector(
-                onTap: () {
-                  _pageController.jumpToPage(index); // サムネイルをタップしたら該当ページに移動
-                  setState(() {
-                    _currentPage = index;
-                  });
-                },
-                child: Container(
-                  margin: EdgeInsets.symmetric(horizontal: 4),
-                  width: 100, // サムネイルの幅をさらに大きく設定
-                  height: 100, // サムネイルの高さをさらに大きく設定
-                  decoration: BoxDecoration(
-                    border: Border.all(
-                      color: _currentPage == index ? Colors.blue : Colors.grey,
-                      width: 2,
+              (index) => Container(
+                margin: EdgeInsets.symmetric(horizontal: 4),
+                width: _currentPage == index ? 12 : 8,
+                height: _currentPage == index ? 12 : 8,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _currentPage == index ? Colors.blue : Colors.grey,
+                ),
+              ),
+            ),
+          ),
+          SizedBox(height: 10),
+          // サムネイルを追加
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                profileData!['imageUrls'].length,
+                (index) => GestureDetector(
+                  onTap: () {
+                    _pageController.jumpToPage(index); // サムネイルをタップしたら該当ページに移動
+                    setState(() {
+                      _currentPage = index;
+                    });
+                  },
+                  child: Container(
+                    margin: EdgeInsets.symmetric(horizontal: 4),
+                    width: 100, // サムネイルの幅をさらに大きく設定
+                    height: 100, // サムネイルの高さをさらに大きく設定
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: _currentPage == index ? Colors.blue : Colors.grey,
+                        width: 2,
+                      ),
+                      borderRadius: BorderRadius.circular(8),
                     ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      profileData!['imageUrls'][index],
-                      fit: BoxFit.cover,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        profileData!['imageUrls'][index],
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
-    );
-  } else {
-    return Center(
-      child: Container(
-        height: 400, // 高さをさらに大きく設定
-        color: Colors.grey[300],
-        child: Center(
-          child: Text(
-            '画像はありません(No images available)',
-            style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+        ],
+      );
+    } else {
+      return Center(
+        child: Container(
+          height: 400, // 高さをさらに大きく設定
+          color: Colors.grey[300],
+          child: Center(
+            child: Text(
+              '画像はありません(No images available)',
+              style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+            ),
           ),
         ),
-      ),
-    );
+      );
+    }
   }
-}
 
   // 商品詳細カード
   Widget _buildProductDetailsCard() {
@@ -586,6 +575,10 @@ Widget _buildProductImages() {
                 style: TextStyle(fontSize: 16, color: Colors.grey[700]),
               ),
               SizedBox(height: 8),
+              Text(
+                '取引タイプ(Transaction Type): ${profileData?['transactionType'] ?? '未設定(Not set)'}', // 取引タイプを表示
+                style: TextStyle(fontSize: 16, color: Colors.grey[700]),
+              ),
             ],
           ),
         ),
@@ -670,8 +663,8 @@ Widget _buildProductImages() {
                         padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                       ),
                       child: Text("キャンセルを承認(Approve Cancellation)", style: TextStyle(fontSize: 16, color: Colors.white)),
-                    )
-                  else if (isAdmin || status == "下書き(draft)") // 一般ユーザーでも下書きの場合は編集可能
+                    ),
+                  if (isAdmin || status == "下書き(draft)") // 一般ユーザーでも下書きの場合は編集可能
                     ElevatedButton(
                       onPressed: _editItem,
                       style: ElevatedButton.styleFrom(
@@ -679,7 +672,7 @@ Widget _buildProductImages() {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                       ),
-                      child: Text("編集(edit)", style: TextStyle(fontSize: 16, color: Colors.white)),
+                      child: Text("編集(Edit)", style: TextStyle(fontSize: 16, color: Colors.white)),
                     )
                   else if (status == "購入済み(Purchased)")
                     ElevatedButton(
@@ -689,7 +682,7 @@ Widget _buildProductImages() {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                       ),
-                      child: Text("購入取り消し(Purchase cancellation)", style: TextStyle(fontSize: 16, color: Colors.white)),
+                      child: Text("購入取り消し(Purchase Cancellation)", style: TextStyle(fontSize: 16, color: Colors.white)),
                     )
                   else if (!isAdmin && status == "出品中(listed)")
                     ElevatedButton(
@@ -699,7 +692,7 @@ Widget _buildProductImages() {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
                       ),
-                      child: Text("購入する(buy)", style: TextStyle(fontSize: 16, color: Colors.white)),
+                      child: Text("購入する(Buy)", style: TextStyle(fontSize: 16, color: Colors.white)),
                     ),
                   SizedBox(height: 20),
                 ],
