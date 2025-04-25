@@ -223,26 +223,6 @@ class CreateScreen extends StatelessWidget {
                                (viewModel.selectedTransactionType == '仲介(Mediation)' || 
                                 viewModel.visitDateController.text.isNotEmpty) // 仲介の場合は来店予定日を必須から除外
                         ? () async {
-                            if (viewModel.selectedPickupMethod == '配送(Delivery)') {
-                              final user = FirebaseAuth.instance.currentUser;
-                              if (user == null ||
-                                  user.email == null ||
-                                  user.email!.isEmpty ||
-                                  user.displayName == null ||
-                                  user.displayName!.isEmpty ||
-                                  user.phoneNumber == null ||
-                                  user.phoneNumber!.isEmpty) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      '配送を選択した場合、メールアドレス、本名、電話番号が必要です(Email, Full Name, and Phone Number are required for delivery)',
-                                    ),
-                                  ),
-                                );
-                                return;
-                              }
-                            }
-
                             if (profileId == null) {
                               await viewModel.submitProfile(context, isAdmin);
                             } else {

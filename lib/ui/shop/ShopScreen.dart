@@ -279,6 +279,10 @@ class _ShopScreenState extends State<ShopScreen> {
       iconData = Icons.handshake; // 仲介用のアイコン
       color = Colors.blue;
       tag = "仲介(Mediation)";
+      } else if (visit['pickupMethod'] == '仲介(Mediation)') {
+      iconData = Icons.handshake; // 仲介用のアイコン
+      color = Colors.blue;
+      tag = "仲介(Mediation)";
     } else if (visit['pickupMethod'] == '配送(Delivery)') {
       iconData = Icons.local_shipping; // 配送用のアイコン
       color = Colors.purple;
